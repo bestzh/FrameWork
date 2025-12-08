@@ -1,0 +1,53 @@
+{
+  "configs": [
+    {
+      "uiName": "MainUI",
+      "uiPath": "UI/MainUI",
+      "layer": 1,
+      "isModal": false,
+      "cacheOnLoad": true,
+      "preload": true,
+      "poolSize": 0,
+      "showAnimationDuration": 0.3,
+      "hideAnimationDuration": 0.2,
+      "customProperties": []
+    },
+    {
+      "uiName": "RemindersUI",
+      "uiPath": "UI/RemindersUI",
+      "layer": 2,
+      "isModal": false,
+      "cacheOnLoad": true,
+      "preload": false,
+      "poolSize": 0,
+      "showAnimationDuration": 0.3,
+      "hideAnimationDuration": 0.2,
+      "customProperties": []
+    },
+    {
+      "uiName": "SettingPanelUI",
+      "uiPath": "UI/SettingPanelUI",
+      "layer": 2,
+      "isModal": false,
+      "cacheOnLoad": true,
+      "preload": false,
+      "poolSize": 0,
+      "showAnimationDuration": 0.3,
+      "hideAnimationDuration": 0.2,
+      "customProperties": []
+    },
+    {
+      "uiName": "ConfirmDialogUI",
+      "uiPath": "UI/ConfirmDialogUI",
+      "layer": 3,
+      "isModal": true,
+      "cacheOnLoad": false,
+      "preload": false,
+      "poolSize": 5,
+      "showAnimationDuration": 0.2,
+      "hideAnimationDuration": 0.15,
+      "customProperties": []
+    }
+  ]
+}
+

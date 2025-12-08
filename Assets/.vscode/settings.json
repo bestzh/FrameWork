@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.lua.txt": "lua",
+        ".lua.txt": "lua"
+    },
+    "Lua.files.associations": {
+        "*.lua.txt": "lua"
+    },
+    "editor.codeActionsOnSave": {
+
+    }
+}

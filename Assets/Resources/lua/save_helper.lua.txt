@@ -1,0 +1,228 @@
+-- 数据存储Lua封装
+-- 提供更简洁的Lua API来保存和加载游戏数据
+
+local SaveHelper = {}
+
+-- PlayerPrefs方式（简单数据）
+
+-- 保存整数
+-- key: 数据键名
+-- value: 整数值
+function SaveHelper.SaveInt(key, value)
+    CS.LuaHelper.SaveInt(key, value)
+end
+
+-- 加载整数
+-- key: 数据键名
+-- defaultValue: 默认值（如果数据不存在）
+-- 返回: 整数值
+function SaveHelper.LoadInt(key, defaultValue)
+    defaultValue = defaultValue or 0
+    return CS.LuaHelper.LoadInt(key, defaultValue)
+end
+
+-- 保存浮点数
+-- key: 数据键名
+-- value: 浮点数值
+function SaveHelper.SaveFloat(key, value)
+    CS.LuaHelper.SaveFloat(key, value)
+end
+
+-- 加载浮点数
+-- key: 数据键名
+-- defaultValue: 默认值（如果数据不存在）
+-- 返回: 浮点数值
+function SaveHelper.LoadFloat(key, defaultValue)
+    defaultValue = defaultValue or 0.0
+    return CS.LuaHelper.LoadFloat(key, defaultValue)
+end
+
+-- 保存字符串
+-- key: 数据键名
+-- value: 字符串值
+function SaveHelper.SaveString(key, value)
+    CS.LuaHelper.SaveString(key, value)
+end
+
+-- 加载字符串
+-- key: 数据键名
+-- defaultValue: 默认值（如果数据不存在）
+-- 返回: 字符串值
+function SaveHelper.LoadString(key, defaultValue)
+    defaultValue = defaultValue or ""
+    return CS.LuaHelper.LoadString(key, defaultValue)
+end
+
+-- 保存布尔值
+-- key: 数据键名
+-- value: 布尔值
+function SaveHelper.SaveBool(key, value)
+    CS.LuaHelper.SaveBool(key, value)
+end
+
+-- 加载布尔值
+-- key: 数据键名
+-- defaultValue: 默认值（如果数据不存在）
+-- 返回: 布尔值
+function SaveHelper.LoadBool(key, defaultValue)
+    defaultValue = defaultValue or false
+    return CS.LuaHelper.LoadBool(key, defaultValue)
+end
+
+-- JSON文件方式（复杂数据）
+
+-- 保存数据到JSON文件
+-- fileName: 文件名（不需要扩展名）
+-- data: 数据表（Lua table）或JSON字符串
+-- encrypt: 是否加密（可选，默认false）
+function SaveHelper.SaveToJson(fileName, data, encrypt)
+    encrypt = encrypt or false
+    local json
+    
+    -- 如果data是字符串，直接使用；否则转换为JSON
+    if type(data) == "string" then
+        json = data
+    else
+        -- 将Lua table转换为JSON字符串
+        json = SaveHelper.TableToJson(data)
+    end
+    
+    CS.LuaHelper.SaveToJson(fileName, json, encrypt)
+end
+
+-- 从JSON文件加载数据（返回JSON字符串）
+-- fileName: 文件名（不需要扩展名）
+-- encrypted: 文件是否加密（可选，默认false）
+-- 返回: JSON字符串，如果文件不存在则返回nil
+function SaveHelper.LoadFromJson(fileName, encrypted)
+    encrypted = encrypted or false
+    local json = CS.LuaHelper.LoadFromJson(fileName, encrypted)
+    if json and json ~= "" then
+        return json
+    end
+    return nil
+end
+
+-- 从JSON文件加载数据并转换为Lua table
+-- fileName: 文件名（不需要扩展名）
+-- encrypted: 文件是否加密（可选，默认false）
+-- 返回: 数据表（Lua table），如果文件不存在则返回nil
+function SaveHelper.LoadFromJsonTable(fileName, encrypted)
+    local json = SaveHelper.LoadFromJson(fileName, encrypted)
+    if json then
+        return SaveHelper.JsonToTable(json)
+    end
+    return nil
+end
+
+-- 工具方法
+
+-- 删除数据
+-- key: 数据键名
+function SaveHelper.DeleteData(key)
+    CS.LuaHelper.DeleteData(key)
+end
+
+-- 检查数据是否存在
+-- key: 数据键名
+-- 返回: true/false
+function SaveHelper.HasData(key)
+    return CS.LuaHelper.HasData(key)
+end
+
+-- 删除所有PlayerPrefs数据
+function SaveHelper.DeleteAll()
+    CS.LuaHelper.DeleteAll()
+end
+
+-- 设置是否启用加密
+-- enabled: 是否启用
+function SaveHelper.SetEncryptionEnabled(enabled)
+    CS.LuaHelper.SetEncryptionEnabled(enabled)
+end
+
+-- 获取保存数据路径
+-- 返回: 保存数据路径字符串
+function SaveHelper.GetSaveDataPath()
+    return CS.LuaHelper.GetSaveDataPath()
+end
+
+-- Lua table转JSON字符串（简单实现）
+function SaveHelper.TableToJson(tbl)
+    if type(tbl) ~= "table" then
+        if type(tbl) == "string" then
+            return '"' .. tbl .. '"'
+        elseif type(tbl) == "number" or type(tbl) == "boolean" then
+            return tostring(tbl)
+        else
+            return "null"
+        end
+    end
+    
+    local result = {}
+    local isArray = true
+    local maxIndex = 0
+    
+    -- 检查是否是数组
+    for k, v in pairs(tbl) do
+        if type(k) ~= "number" then
+            isArray = false
+            break
+        end
+        if k > maxIndex then
+            maxIndex = k
+        end
+    end
+    
+    if isArray and maxIndex == #tbl then
+        -- 数组格式
+        for i = 1, maxIndex do
+            table.insert(result, SaveHelper.TableToJson(tbl[i]))
+        end
+        return "[" .. table.concat(result, ",") .. "]"
+    else
+        -- 对象格式
+        for k, v in pairs(tbl) do
+            local key = type(k) == "string" and '"' .. k .. '"' or tostring(k)
+            local value = SaveHelper.TableToJson(v)
+            table.insert(result, key .. ":" .. value)
+        end
+        return "{" .. table.concat(result, ",") .. "}"
+    end
+end
+
+-- JSON字符串转Lua table（简单实现，建议使用第三方库如cjson）
+function SaveHelper.JsonToTable(json)
+    -- 注意：这是一个简化实现，对于复杂JSON建议使用cjson库
+    -- 这里提供一个基础版本，实际项目中建议使用cjson
+    if not json or json == "" then
+        return nil
+    end
+    
+    -- 简单解析（仅支持基本格式）
+    -- 实际项目中建议使用cjson库：local cjson = require("cjson")
+    -- return cjson.decode(json)
+    
+    -- 这里返回一个占位符，实际使用时需要实现JSON解析或使用cjson
+    print("[SaveHelper] 警告: JsonToTable需要实现JSON解析，建议使用cjson库")
+    return nil
+end
+
+-- 使用cjson库的版本（如果项目中包含cjson）
+function SaveHelper.SaveToJsonWithCJson(fileName, data, encrypt)
+    local cjson = require("cjson")
+    local json = cjson.encode(data)
+    CS.LuaHelper.SaveToJson(fileName, json, encrypt or false)
+end
+
+function SaveHelper.LoadFromJsonWithCJson(fileName, encrypted)
+    local json = CS.LuaHelper.LoadFromJson(fileName, encrypted or false)
+    if json and json ~= "" then
+        local cjson = require("cjson")
+        return cjson.decode(json)
+    end
+    return nil
+end
+
+return SaveHelper
+

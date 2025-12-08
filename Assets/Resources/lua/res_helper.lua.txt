@@ -1,0 +1,87 @@
+-- 资源加载Lua封装
+-- 提供更简洁的Lua API来加载各种资源
+
+local ResHelper = {}
+
+-- 通用资源加载方法（推荐使用）
+-- path: 资源路径（相对于Resources文件夹，不需要扩展名）
+-- typeName: 资源类型名称（如"GameObject", "Texture2D", "Sprite", "AudioClip", "TextAsset", "Material"等）
+function ResHelper.Load(path, typeName)
+    typeName = typeName or "GameObject"
+    return CS.LuaHelper.LoadResource(path, typeName)
+end
+
+-- 通用异步资源加载方法（推荐使用）
+-- path: 资源路径
+-- typeName: 资源类型名称
+-- onComplete: 加载完成回调函数 function(resource)
+function ResHelper.LoadAsync(path, typeName, onComplete)
+    typeName = typeName or "GameObject"
+    CS.LuaHelper.LoadResourceAsync(path, typeName, onComplete)
+end
+
+-- 同步加载资源（具体类型方法，方便使用）
+
+-- 加载GameObject预制体
+function ResHelper.LoadGameObject(path)
+    return CS.LuaHelper.LoadGameObject(path)
+end
+
+-- 加载Texture2D
+function ResHelper.LoadTexture(path)
+    return CS.LuaHelper.LoadTexture(path)
+end
+
+-- 加载Sprite
+function ResHelper.LoadSprite(path)
+    return CS.LuaHelper.LoadSprite(path)
+end
+
+-- 加载AudioClip
+function ResHelper.LoadAudioClip(path)
+    return CS.LuaHelper.LoadAudioClip(path)
+end
+
+-- 加载TextAsset
+function ResHelper.LoadTextAsset(path)
+    return CS.LuaHelper.LoadTextAsset(path)
+end
+
+-- 加载Material
+function ResHelper.LoadMaterial(path)
+    return CS.LuaHelper.LoadMaterial(path)
+end
+
+-- 异步加载资源
+
+-- 异步加载GameObject
+function ResHelper.LoadGameObjectAsync(path, onComplete)
+    CS.LuaHelper.LoadGameObjectAsync(path, onComplete)
+end
+
+-- 异步加载Texture2D
+function ResHelper.LoadTextureAsync(path, onComplete)
+    CS.LuaHelper.LoadTextureAsync(path, onComplete)
+end
+
+-- 异步加载Sprite
+function ResHelper.LoadSpriteAsync(path, onComplete)
+    CS.LuaHelper.LoadSpriteAsync(path, onComplete)
+end
+
+-- 异步加载AudioClip
+function ResHelper.LoadAudioClipAsync(path, onComplete)
+    CS.LuaHelper.LoadAudioClipAsync(path, onComplete)
+end
+
+-- 实例化GameObject
+function ResHelper.Instantiate(prefab, parent)
+    if parent then
+        return CS.LuaHelper.Instantiate(prefab, parent)
+    else
+        return CS.LuaHelper.Instantiate(prefab)
+    end
+end
+
+return ResHelper
+

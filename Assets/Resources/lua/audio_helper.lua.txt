@@ -1,0 +1,163 @@
+-- 音频管理Lua封装
+-- 提供更简洁的Lua API来管理音频
+
+local AudioHelper = {}
+
+-- 背景音乐管理
+
+-- 播放背景音乐
+-- clipName: 音频资源名称（路径，相对于Resources文件夹，不需要扩展名）
+-- loop: 是否循环（默认true）
+-- fadeIn: 是否淡入（默认false）
+-- fadeTime: 淡入时间（秒，默认1.0）
+function AudioHelper.PlayMusic(clipName, loop, fadeIn, fadeTime)
+    loop = loop ~= nil and loop or true
+    fadeIn = fadeIn ~= nil and fadeIn or false
+    fadeTime = fadeTime or 1.0
+    CS.LuaHelper.PlayMusic(clipName, loop, fadeIn, fadeTime)
+end
+
+-- 停止背景音乐
+-- fadeOut: 是否淡出（默认false）
+-- fadeTime: 淡出时间（秒，默认1.0）
+function AudioHelper.StopMusic(fadeOut, fadeTime)
+    fadeOut = fadeOut ~= nil and fadeOut or false
+    fadeTime = fadeTime or 1.0
+    CS.LuaHelper.StopMusic(fadeOut, fadeTime)
+end
+
+-- 暂停背景音乐
+function AudioHelper.PauseMusic()
+    CS.LuaHelper.PauseMusic()
+end
+
+-- 恢复背景音乐
+function AudioHelper.ResumeMusic()
+    CS.LuaHelper.ResumeMusic()
+end
+
+-- 切换背景音乐（淡出旧音乐，淡入新音乐）
+-- newClipName: 新音乐名称
+-- loop: 是否循环（默认true）
+-- fadeTime: 淡入淡出时间（秒，默认1.0）
+function AudioHelper.SwitchMusic(newClipName, loop, fadeTime)
+    loop = loop ~= nil and loop or true
+    fadeTime = fadeTime or 1.0
+    CS.LuaHelper.SwitchMusic(newClipName, loop, fadeTime)
+end
+
+-- 音效管理
+
+-- 播放音效
+-- clipName: 音频资源名称（路径）
+-- volume: 音量（0-1），如果为nil或-1则使用全局音效音量
+-- pitch: 音调（1.0为正常，默认1.0）
+function AudioHelper.PlaySound(clipName, volume, pitch)
+    volume = volume or -1
+    pitch = pitch or 1.0
+    CS.LuaHelper.PlaySound(clipName, volume, pitch)
+end
+
+-- 停止所有音效
+function AudioHelper.StopAllSounds()
+    CS.LuaHelper.StopAllSounds()
+end
+
+-- 停止指定音效
+-- clipName: 音频资源名称
+function AudioHelper.StopSound(clipName)
+    CS.LuaHelper.StopSound(clipName)
+end
+
+-- 音量控制
+
+-- 设置背景音乐音量
+-- volume: 音量（0-1）
+function AudioHelper.SetMusicVolume(volume)
+    CS.LuaHelper.SetMusicVolume(volume)
+end
+
+-- 设置音效音量
+-- volume: 音量（0-1）
+function AudioHelper.SetSoundVolume(volume)
+    CS.LuaHelper.SetSoundVolume(volume)
+end
+
+-- 获取背景音乐音量
+-- 返回: 音量值（0-1）
+function AudioHelper.GetMusicVolume()
+    return CS.LuaHelper.GetMusicVolume()
+end
+
+-- 获取音效音量
+-- 返回: 音量值（0-1）
+function AudioHelper.GetSoundVolume()
+    return CS.LuaHelper.GetSoundVolume()
+end
+
+-- 静音/取消静音背景音乐
+-- muted: 是否静音（true/false）
+function AudioHelper.SetMusicMuted(muted)
+    CS.LuaHelper.SetMusicMuted(muted)
+end
+
+-- 静音/取消静音音效
+-- muted: 是否静音（true/false）
+function AudioHelper.SetSoundMuted(muted)
+    CS.LuaHelper.SetSoundMuted(muted)
+end
+
+-- 检查音乐是否静音
+-- 返回: true/false
+function AudioHelper.IsMusicMuted()
+    return CS.LuaHelper.IsMusicMuted()
+end
+
+-- 检查音效是否静音
+-- 返回: true/false
+function AudioHelper.IsSoundMuted()
+    return CS.LuaHelper.IsSoundMuted()
+end
+
+-- 资源管理
+
+-- 预加载音频资源
+-- clipName: 音频资源名称
+-- onComplete: 完成回调函数 function(success) success为true表示成功，false表示失败
+function AudioHelper.PreloadAudio(clipName, onComplete)
+    CS.LuaHelper.PreloadAudio(clipName, onComplete)
+end
+
+-- 卸载音频资源（从缓存中移除）
+-- clipName: 音频资源名称
+function AudioHelper.UnloadAudio(clipName)
+    CS.LuaHelper.UnloadAudio(clipName)
+end
+
+-- 清空音频缓存
+function AudioHelper.ClearAudioCache()
+    CS.LuaHelper.ClearAudioCache()
+end
+
+-- 工具方法
+
+-- 检查音乐是否正在播放
+-- 返回: true/false
+function AudioHelper.IsMusicPlaying()
+    return CS.LuaHelper.IsMusicPlaying()
+end
+
+-- 获取当前播放的音乐名称
+-- 返回: 音乐名称字符串，如果没有播放则返回空字符串
+function AudioHelper.GetCurrentMusicName()
+    return CS.LuaHelper.GetCurrentMusicName()
+end
+
+-- 获取活动音效数量
+-- 返回: 当前正在播放的音效数量
+function AudioHelper.GetActiveSoundCount()
+    return CS.LuaHelper.GetActiveSoundCount()
+end
+
+return AudioHelper
+

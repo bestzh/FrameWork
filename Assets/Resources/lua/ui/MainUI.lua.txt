@@ -1,0 +1,88 @@
+local MainUI = {}
+
+local currentUI = nil
+
+function MainUI.OnInitialize(ui)
+    print("[MainUI.lua] OnInitialize被调用")
+    currentUI = ui
+    
+    -- 绑定按钮（自动播放点击音效）
+    local stopBtn = ui.transform:Find("Stop")
+    if stopBtn then
+        local btn = stopBtn:GetComponent("Button")
+        if btn then
+            -- 绑定按钮并自动播放音效
+            UIHelper.BindButtonWithSound(btn, MainUI.OnStopBtnClick)
+            -- 或者不播放音效：UIHelper.BindButton(btn, MainUI.OnStopBtnClick)
+        end
+    end
+end
+
+function MainUI.OnShow(ui)
+    print("[MainUI.lua] OnShow被调用")
+    MainUI.ObjectPoolExample()
+end
+
+function MainUI.OnHide(ui)
+    print("[MainUI.lua] OnHide被调用")
+end
+
+function MainUI.OnDestroy(ui)
+    print("[MainUI.lua] OnDestroy被调用")
+    currentUI = nil
+end
+
+-- 停止按钮点击事件
+function MainUI.OnStopBtnClick()
+    UIHelper.UnloadLuaUI("MainUI")
+
+    -- 使用异步加载场景，在加载完成后再实例化对象
+    SceneHelper.LoadSceneAsync("SceneOne", nil, function()
+        -- 场景加载完成后实例化对象（场景加载回调已经等待了2帧，确保场景完全激活）
+        local cubePrefab = ResHelper.Load("Prefabs/Cube", "GameObject")
+        if cubePrefab then
+            local cube = ResHelper.Instantiate(cubePrefab)
+            if cube then
+                print("[MainUI] Cube已在新场景中实例化，位置: " .. tostring(cube.transform.position))
+            else
+                print("[MainUI] 错误: Cube实例化失败")
+            end
+        else
+            print("[MainUI] 错误: 无法加载Cube预制体")
+        end
+    end)
+end
+
+-- ============================================
+-- 对象池使用示例（简单版）
+-- ============================================
+
+-- 对象池示例：创建、获取、回收
+function MainUI.ObjectPoolExample()
+    print("[MainUI] 对象池示例：创建、获取、回收")
+    
+    -- 1. 创建对象池
+    local cubePrefab = ResHelper.Load("Prefabs/Cube", "GameObject")
+    if cubePrefab then
+        PoolHelper.CreatePool("CubePool", cubePrefab, 20,3)
+        print("[MainUI] ✓ 创建对象池成功")
+    else
+        print("[MainUI] 错误: 无法加载Cube预制体")
+        return
+    end
+    
+    -- 2. 从对象池获取对象（使用池的默认自动回收时间3秒）
+    local cube = PoolHelper.Get("CubePool", cubePrefab, -1)  -- -1表示使用池的默认值（3秒）
+    if cube then
+        cube.transform.position = CS.UnityEngine.Vector3(0, 2, 0)
+        print("[MainUI] ✓ 从对象池获取Cube成功，3秒后自动回收")
+    end
+    
+    -- -- 3. 回收对象到对象池
+    -- if cube then
+    --     PoolHelper.Release("CubePool", cube)
+    --     print("[MainUI] ✓ Cube已回收到对象池")
+    -- end
+end
+
+return MainUI

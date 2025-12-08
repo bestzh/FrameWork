@@ -1,0 +1,159 @@
+-- 对象池Lua封装
+-- 提供更简洁的Lua API来管理对象池
+
+local PoolHelper = {}
+
+-- 创建对象池
+-- poolName: 池名称
+-- prefab: 预制体（GameObject）
+-- maxSize: 最大池大小（可选，默认50，-1表示使用默认值）
+-- defaultAutoReleaseTime: 默认自动回收时间（秒，可选，-1表示不自动回收）
+function PoolHelper.CreatePool(poolName, prefab, maxSize, defaultAutoReleaseTime)
+    maxSize = maxSize or -1  -- -1表示使用默认值
+    defaultAutoReleaseTime = defaultAutoReleaseTime or -1  -- -1表示不自动回收
+    CS.LuaHelper.CreatePool(poolName, prefab, maxSize, defaultAutoReleaseTime)
+end
+
+-- 从对象池获取对象
+-- poolName: 池名称
+-- prefab: 预制体（可选，如果池不存在会创建新池）
+-- autoReleaseTime: 自动回收时间（秒，可选）
+--   - nil或-2: 不自动回收（即使池设置了默认值也不自动回收）
+--   - -1: 使用池的默认自动回收时间
+--   - >=0: 使用指定的时间
+-- 返回: GameObject对象
+function PoolHelper.Get(poolName, prefab, autoReleaseTime)
+    autoReleaseTime = autoReleaseTime or -2  -- -2表示不自动回收
+    return CS.LuaHelper.GetFromPool(poolName, prefab, autoReleaseTime)
+end
+
+-- 将对象回收到对象池
+-- poolName: 池名称（可选，如果不提供会自动识别）
+-- obj: 要回收的对象（GameObject）
+function PoolHelper.Release(poolName, obj)
+    if obj == nil then
+        print("[PoolHelper] 警告: 尝试回收空对象")
+        return
+    end
+    
+    if poolName == nil or poolName == "" then
+        -- 自动识别池名
+        CS.LuaHelper.ReleaseToPool(obj)
+    else
+        CS.LuaHelper.ReleaseToPool(poolName, obj)
+    end
+end
+
+-- 预加载对象到对象池
+-- poolName: 池名称
+-- prefab: 预制体
+-- count: 预加载数量
+function PoolHelper.Preload(poolName, prefab, count)
+    if poolName == nil or prefab == nil or count == nil or count <= 0 then
+        print("[PoolHelper] 警告: 预加载参数错误")
+        return
+    end
+    
+    CS.LuaHelper.PreloadPool(poolName, prefab, count)
+end
+
+-- 延迟自动回收对象
+-- poolName: 池名称（可选）
+-- obj: 要回收的对象
+-- delay: 延迟时间（秒）
+function PoolHelper.AutoRelease(poolName, obj, delay)
+    if obj == nil or delay == nil or delay < 0 then
+        return
+    end
+    
+    poolName = poolName or ""
+    CS.LuaHelper.AutoReleasePool(poolName, obj, delay)
+end
+
+-- 销毁对象池
+-- poolName: 池名称
+function PoolHelper.DestroyPool(poolName)
+    CS.LuaHelper.DestroyPool(poolName)
+end
+
+-- 清空对象池
+-- poolName: 池名称
+function PoolHelper.ClearPool(poolName)
+    CS.LuaHelper.ClearPool(poolName)
+end
+
+-- 获取对象池信息
+-- poolName: 池名称
+-- 返回: 池信息表（包含activeCount, poolCount, maxSize, totalCreated）
+function PoolHelper.GetPoolInfo(poolName)
+    local info = CS.LuaHelper.GetPoolInfo(poolName)
+    if info == nil then
+        return nil
+    end
+    
+    return {
+        poolName = info.poolName,
+        activeCount = info.activeCount,
+        poolCount = info.poolCount,
+        maxSize = info.maxSize,
+        totalCreated = info.totalCreated
+    }
+end
+
+-- 设置对象池最大大小
+-- poolName: 池名称
+-- maxSize: 最大大小
+function PoolHelper.SetMaxSize(poolName, maxSize)
+    CS.LuaHelper.SetPoolMaxSize(poolName, maxSize)
+end
+
+-- 设置对象池默认自动回收时间
+-- poolName: 池名称
+-- autoReleaseTime: 自动回收时间（秒，-1表示不自动回收）
+function PoolHelper.SetDefaultAutoReleaseTime(poolName, autoReleaseTime)
+    CS.LuaHelper.SetPoolDefaultAutoReleaseTime(poolName, autoReleaseTime)
+end
+
+-- 回收所有活跃对象
+-- poolName: 池名称（可选，如果不提供则回收所有池）
+function PoolHelper.ReleaseAll(poolName)
+    poolName = poolName or nil
+    CS.LuaHelper.ReleaseAllFromPool(poolName)
+end
+
+-- 便捷方法：获取并激活对象
+-- poolName: 池名称
+-- prefab: 预制体（可选）
+-- position: 位置（可选）
+-- rotation: 旋转（可选）
+-- 返回: GameObject对象
+function PoolHelper.GetAndActivate(poolName, prefab, position, rotation)
+    local obj = PoolHelper.Get(poolName, prefab)
+    if obj then
+        if position then
+            obj.transform.position = position
+        end
+        if rotation then
+            obj.transform.rotation = rotation
+        end
+    end
+    return obj
+end
+
+-- 便捷方法：获取对象并在指定时间后自动回收
+-- poolName: 池名称
+-- prefab: 预制体（可选）
+-- delay: 延迟回收时间（秒）
+-- position: 位置（可选）
+-- rotation: 旋转（可选）
+-- 返回: GameObject对象
+function PoolHelper.GetWithAutoRelease(poolName, prefab, delay, position, rotation)
+    local obj = PoolHelper.GetAndActivate(poolName, prefab, position, rotation)
+    if obj and delay and delay > 0 then
+        PoolHelper.AutoRelease(poolName, obj, delay)
+    end
+    return obj
+end
+
+return PoolHelper
+

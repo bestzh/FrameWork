@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: ScencGroup
+  m_EditorClassIdentifier: 
+  m_GroupName: ScencGroup
+  m_GUID: 2caf8fa2803d38e4990b2015004dbe19
+  m_SerializeEntries:
+  - m_GUID: 59a8432ec7a5b0e479086774bd38221d
+    m_Address: Assets/Scenes/SceneOne.unity
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 99c9720ab356a0642a771bea13969a05
+    m_Address: Assets/Scenes/Main.unity
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: b9e62e5d83f3a9c4aae521be13f7ec4a, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 21eca40737c0e3a4790d953441ac7758, type: 2}
+    - {fileID: 11400000, guid: a2bdeb9ae1ed60247a6933e5a7091987, type: 2}

@@ -1,0 +1,17 @@
+-- Lua主脚本
+-- 游戏启动时首先加载此脚本
+
+print("[LuaMain] Lua主脚本已加载")
+
+UIHelper = require("ui_helper")
+ResHelper = require("res_helper")
+PoolHelper = require("pool_helper")
+SceneHelper = require("scene_helper")
+AudioHelper = require("audio_helper")
+SaveHelper = require("save_helper")
+-- 全局Start函数（由GameInitializer调用）
+function Start()
+    print("[LuaMain] Start函数被调用")
+    
+    UIHelper.LoadLuaUI("MainUI", "UI/MainUI", nil, true)
+end

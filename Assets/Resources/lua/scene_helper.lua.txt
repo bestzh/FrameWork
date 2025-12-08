@@ -1,0 +1,57 @@
+-- 场景管理Lua封装
+-- 提供更简洁的Lua API来管理场景
+
+local SceneHelper = {}
+
+-- 同步加载场景
+-- sceneName: 场景名称（不需要扩展名）
+function SceneHelper.LoadScene(sceneName)
+    CS.LuaHelper.LoadScene(sceneName)
+end
+
+-- 异步加载场景
+-- sceneName: 场景名称
+-- onProgress: 进度回调函数 function(progress) progress范围0-1
+-- onComplete: 完成回调函数 function()
+function SceneHelper.LoadSceneAsync(sceneName, onProgress, onComplete)
+    CS.LuaHelper.LoadSceneAsync(sceneName, onProgress, onComplete)
+end
+
+-- 预加载场景（不激活）
+-- sceneName: 场景名称
+-- onComplete: 完成回调函数 function()
+function SceneHelper.PreloadScene(sceneName, onComplete)
+    CS.LuaHelper.PreloadScene(sceneName, onComplete)
+end
+
+-- 卸载场景
+-- sceneName: 场景名称
+-- onComplete: 完成回调函数 function()
+function SceneHelper.UnloadScene(sceneName, onComplete)
+    CS.LuaHelper.UnloadScene(sceneName, onComplete)
+end
+
+-- 获取当前场景名称
+function SceneHelper.GetCurrentSceneName()
+    return CS.LuaHelper.GetCurrentSceneName()
+end
+
+-- 检查场景是否正在加载
+function SceneHelper.IsLoading()
+    return CS.LuaHelper.IsSceneLoading()
+end
+
+-- 重新加载当前场景
+function SceneHelper.ReloadCurrentScene()
+    CS.LuaHelper.ReloadCurrentScene()
+end
+
+-- 异步重新加载当前场景
+-- onProgress: 进度回调函数 function(progress)
+-- onComplete: 完成回调函数 function()
+function SceneHelper.ReloadCurrentSceneAsync(onProgress, onComplete)
+    CS.LuaHelper.ReloadCurrentSceneAsync(onProgress, onComplete)
+end
+
+return SceneHelper
+

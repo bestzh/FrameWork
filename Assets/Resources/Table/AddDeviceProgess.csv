@@ -1,0 +1,6 @@
+ID	Name	LoadPath	DeviceInfo
+UINT32	STRING	STRING	STRING
+1	Step 1: Power on the device	UI/AddDeviceProgess/Progess01	null
+2	Step 2: Search for devices	UI/AddDeviceProgess/Progess03	null
+3	Step 3: Configure the network	UI/AddDeviceProgess/Progess04	null
+4	Step 4: Wait for connection	UI/AddDeviceProgess/Progess05	null

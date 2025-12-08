@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Lua_Group
+  m_EditorClassIdentifier: 
+  m_GroupName: Lua_Group
+  m_GUID: 3cd63f6269097e746bb22fca774aa37d
+  m_SerializeEntries:
+  - m_GUID: 04478cfad2c80164cb59964a0e89c710
+    m_Address: lua/LuaMain
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 111ed9b50e7b51945b4de9de2d97c854
+    m_Address: lua/scene_helper
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 17d91245c40df3d4281d2b9c57284be6
+    m_Address: lua/audio_helper
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 2c3118c4638d1904f913703e6eba4ac6
+    m_Address: lua/res_helper
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 48aed4b9f6e9e9943890f2c912a0b5b9
+    m_Address: lua/save_helper
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5597c5c72d97cc14da72fc4149b3b515
+    m_Address: lua/ui/MainUI
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 645b9872b05458d4bba23986bb8dd1bd
+    m_Address: lua/ui_helper
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ee330439f5d88cd4daff92394498aae3
+    m_Address: lua/pool_helper
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: b9e62e5d83f3a9c4aae521be13f7ec4a, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 1f86676d751c60a49a3ae33da117f694, type: 2}
+    - {fileID: 11400000, guid: 0697cdd23c885cb4ea3d2994afc2d0e0, type: 2}

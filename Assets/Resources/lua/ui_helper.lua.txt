@@ -1,0 +1,158 @@
+-- UI框架Lua封装
+-- 提供更简洁的Lua API来使用UI框架
+
+local UIHelper = {}
+
+-- 加载Lua驱动的UI（推荐，支持热更新）
+-- uiName: UI名称（用于缓存）
+-- uiPath: UI预制体路径
+-- callbacks: 回调函数表 {OnInitialize = function(ui), OnShow = function(ui), OnHide = function(ui)}，可选
+--            如果为nil，会自动尝试加载 ui.{uiName} 模块
+-- showImmediately: 是否立即显示
+function UIHelper.LoadLuaUI(uiName, uiPath, callbacks, showImmediately)
+    showImmediately = showImmediately or false
+    
+    -- 如果没有提供callbacks，尝试自动加载对应的Lua脚本
+    if callbacks == nil then
+        local success, uiModule = pcall(function()
+            -- 尝试加载 ui.{uiName} 模块，例如 ui.MainUI
+            return require("ui." .. uiName)
+        end)
+        
+        if success and uiModule then
+            -- 如果模块存在，使用模块中的回调函数
+            callbacks = {}
+            if uiModule.OnInitialize then
+                callbacks.OnInitialize = uiModule.OnInitialize
+            end
+            if uiModule.OnShow then
+                callbacks.OnShow = uiModule.OnShow
+            end
+            if uiModule.OnHide then
+                callbacks.OnHide = uiModule.OnHide
+            end
+            if uiModule.OnDestroy then
+                callbacks.OnDestroy = uiModule.OnDestroy
+            end
+            
+            -- 支持Unity生命周期方法
+            if uiModule.Update then
+                callbacks.Update = uiModule.Update
+            end
+            if uiModule.FixedUpdate then
+                callbacks.FixedUpdate = uiModule.FixedUpdate
+            end
+            if uiModule.LateUpdate then
+                callbacks.LateUpdate = uiModule.LateUpdate
+            end
+            if uiModule.OnEnable then
+                callbacks.OnEnable = uiModule.OnEnable
+            end
+            if uiModule.OnDisable then
+                callbacks.OnDisable = uiModule.OnDisable
+            end
+            
+            -- 如果模块有Start函数，也调用它（传递UI实例）
+            if uiModule.Start then
+                -- Start函数会在UI初始化后调用
+                callbacks.OnInitialize = function(ui)
+                    if uiModule.OnInitialize then
+                        uiModule.OnInitialize(ui)
+                    end
+                    -- 调用Start函数
+                    uiModule.Start(ui)
+                end
+            end
+        else
+            print("[UIHelper] 警告: 未找到UI对应的Lua脚本 ui." .. uiName .. "，将使用空回调")
+        end
+    end
+    
+    -- 直接传递callbacks表，C#端会自动处理类型转换
+    -- XLua会自动将Lua table转换为LuaTable类型
+    return CS.LuaHelper.LoadLuaUI(uiName, uiPath, callbacks, showImmediately)
+end
+
+-- 加载UI（需要对应的C#类，不支持热更新）
+function UIHelper.LoadUI(uiTypeName, uiPath, showImmediately)
+    showImmediately = showImmediately or false
+    return CS.LuaHelper.LoadUI(uiTypeName, uiPath, showImmediately)
+end
+
+-- 显示Lua驱动的UI（通过UI名称）
+function UIHelper.ShowLuaUI(uiName)
+    CS.LuaHelper.ShowLuaUI(uiName)
+end
+
+-- 隐藏Lua驱动的UI（通过UI名称）
+function UIHelper.HideLuaUI(uiName)
+    CS.LuaHelper.HideLuaUI(uiName)
+end
+
+-- 显示UI（需要对应的C#类，不支持热更新）
+function UIHelper.ShowUI(uiTypeName)
+    CS.LuaHelper.ShowUI(uiTypeName)
+end
+
+-- 隐藏UI（需要对应的C#类，不支持热更新）
+function UIHelper.HideUI(uiTypeName)
+    CS.LuaHelper.HideUI(uiTypeName)
+end
+
+-- 卸载Lua驱动的UI（通过UI名称，会销毁GameObject）
+function UIHelper.UnloadLuaUI(uiName)
+    CS.LuaHelper.UnloadLuaUI(uiName)
+end
+
+-- 卸载UI（需要对应的C#类，不支持热更新）
+function UIHelper.UnloadUI(uiTypeName)
+    CS.LuaHelper.UnloadUI(uiTypeName)
+end
+
+-- 隐藏所有UI
+function UIHelper.HideAllUI()
+    CS.LuaHelper.HideAllUI()
+end
+
+-- 直接访问UIManager实例（需要类型名）
+function UIHelper.GetUIManager()
+    return CS.UIManager.Instance
+end
+
+-- 绑定按钮并自动播放点击音效（推荐使用）
+-- btn: Button组件（通过GetComponent("Button")获取）
+-- onClickCallback: 点击回调函数 function()
+-- soundName: 音效名称（可选，默认为"Sound/Click"），如果为nil则不播放音效
+function UIHelper.BindButtonWithSound(btn, onClickCallback, soundName)
+    soundName = soundName or "Sound/Click"
+    
+    if not btn then
+        print("[UIHelper] 警告: Button组件为空")
+        return false
+    end
+    
+    -- 创建包装函数，先播放音效，再调用原始回调
+    local wrappedCallback = function()
+        -- 播放点击音效
+        if soundName and AudioHelper then
+            AudioHelper.PlaySound(soundName)
+        end
+        -- 调用原始回调
+        if onClickCallback then
+            onClickCallback()
+        end
+    end
+    
+    btn.onClick:AddListener(wrappedCallback)
+    return true
+end
+
+-- 绑定按钮（不播放音效）
+-- btn: Button组件
+-- onClickCallback: 点击回调函数
+function UIHelper.BindButton(btn, onClickCallback)
+    return UIHelper.BindButtonWithSound(btn, onClickCallback, nil)
+end
+
+return UIHelper
+
