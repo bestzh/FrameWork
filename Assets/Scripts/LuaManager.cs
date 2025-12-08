@@ -179,6 +179,10 @@ public class LuaManager : MonoBehaviour
         luaEnv.Global.Set("ObjectPool", typeof(ObjectPool));
         luaEnv.Global.Set("PoolInfo", typeof(PoolInfo));
         luaEnv.Global.Set("IPoolable", typeof(IPoolable));
+        
+        // 注册全局事件管理器
+        luaEnv.Global.Set("EventManager", typeof(EventManager));
+        luaEnv.Global.Set("GlobalEventNames", typeof(GlobalEventNames));
     }
     
     /// <summary>

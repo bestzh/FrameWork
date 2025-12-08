@@ -1,0 +1,329 @@
+-- 协程辅助Lua封装
+-- 提供更简洁的Lua API来管理协程
+-- 注意：使用XLua的util.cs_generator来创建协程生成器
+
+local CoroutineHelper = {}
+
+-- 加载XLua工具
+local util = require('xlua.util')
+
+-- 协程表（用于跟踪和管理协程）
+local activeCoroutines = {}
+local coroutineIdCounter = 0
+
+-- 启动协程（使用XLua的cs_generator）
+-- coroutineFunc: 协程函数 function() 
+--   在函数中使用 coroutine.yield(CS.LuaHelper.WaitForSeconds(1)) 来等待
+-- 返回: 协程ID（用于停止）
+function CoroutineHelper.Start(coroutineFunc)
+    if coroutineFunc == nil or type(coroutineFunc) ~= 'function' then
+        print("[CoroutineHelper] 警告: 协程函数不能为空")
+        return nil
+    end
+    
+    -- 使用XLua的cs_generator创建协程生成器
+    local generator = util.cs_generator(coroutineFunc)
+    
+    -- 启动协程
+    local coroutine = CS.LuaHelper.StartCoroutine(function()
+        return generator
+    end)
+    
+    if coroutine ~= nil then
+        coroutineIdCounter = coroutineIdCounter + 1
+        local coroutineId = coroutineIdCounter
+        activeCoroutines[coroutineId] = coroutine
+        return coroutineId
+    end
+    
+    return nil
+end
+
+-- 停止协程
+-- coroutineId: 协程ID
+function CoroutineHelper.Stop(coroutineId)
+    if coroutineId == nil then
+        return
+    end
+    
+    local coroutine = activeCoroutines[coroutineId]
+    if coroutine ~= nil then
+        CS.LuaHelper.StopCoroutine(coroutine)
+        activeCoroutines[coroutineId] = nil
+    end
+end
+
+-- 停止所有协程
+function CoroutineHelper.StopAll()
+    for id, coroutine in pairs(activeCoroutines) do
+        CS.LuaHelper.StopCoroutine(coroutine)
+    end
+    activeCoroutines = {}
+end
+
+-- 等待秒数（在协程中使用）
+-- seconds: 等待秒数
+-- 用法: yield return CoroutineHelper.WaitForSeconds(1.0)
+function CoroutineHelper.WaitForSeconds(seconds)
+    return CS.LuaHelper.WaitForSeconds(seconds or 0)
+end
+
+-- 等待帧数（在协程中使用）
+-- frames: 等待帧数
+-- 用法: yield return CoroutineHelper.WaitForFrames(60)
+function CoroutineHelper.WaitForFrames(frames)
+    return CS.LuaHelper.WaitForFrames(frames or 1)
+end
+
+-- 等待一帧（在协程中使用）
+-- 用法: yield return CoroutineHelper.WaitForEndOfFrame()
+function CoroutineHelper.WaitForEndOfFrame()
+    return CS.LuaHelper.WaitForEndOfFrame()
+end
+
+-- 等待固定更新（在协程中使用）
+-- 用法: yield return CoroutineHelper.WaitForFixedUpdate()
+function CoroutineHelper.WaitForFixedUpdate()
+    return CS.LuaHelper.WaitForFixedUpdate()
+end
+
+-- 延迟执行回调
+-- callback: 回调函数 function()
+-- delay: 延迟时间（秒，默认0.1秒）
+function CoroutineHelper.DelayCall(callback, delay)
+    if callback == nil then
+        print("[CoroutineHelper] 警告: 回调函数不能为空")
+        return
+    end
+    
+    delay = delay or 0.1
+    CS.LuaHelper.DelayCall(callback, delay)
+end
+
+-- 等待指定秒数后执行回调
+-- seconds: 等待秒数
+-- callback: 回调函数 function()
+function CoroutineHelper.WaitSeconds(seconds, callback)
+    if callback == nil then
+        print("[CoroutineHelper] 警告: 回调函数不能为空")
+        return
+    end
+    
+    seconds = seconds or 0
+    CS.LuaHelper.WaitSeconds(seconds, callback)
+end
+
+-- 等待指定帧数后执行回调
+-- frames: 等待帧数
+-- callback: 回调函数 function()
+function CoroutineHelper.WaitFrames(frames, callback)
+    if callback == nil then
+        print("[CoroutineHelper] 警告: 回调函数不能为空")
+        return
+    end
+    
+    frames = frames or 1
+    CS.LuaHelper.WaitFrames(frames, callback)
+end
+
+-- 等待条件满足后执行回调
+-- condition: 条件函数 function() return bool end
+-- callback: 回调函数 function()
+-- timeout: 超时时间（秒，可选，-1表示不超时）
+function CoroutineHelper.WaitUntil(condition, callback, timeout)
+    if condition == nil or callback == nil then
+        print("[CoroutineHelper] 警告: 条件函数或回调函数不能为空")
+        return
+    end
+    
+    timeout = timeout or -1
+    CS.LuaHelper.WaitUntil(condition, callback, timeout)
+end
+
+-- 重复执行回调
+-- callback: 回调函数 function()
+-- interval: 间隔时间（秒）
+-- repeatCount: 重复次数（可选，-1表示无限重复）
+-- 返回: 协程ID（用于停止）
+function CoroutineHelper.Repeat(callback, interval, repeatCount)
+    if callback == nil then
+        print("[CoroutineHelper] 警告: 回调函数不能为空")
+        return nil
+    end
+    
+    interval = interval or 1.0
+    repeatCount = repeatCount or -1
+    
+    local coroutine = CS.LuaHelper.Repeat(callback, interval, repeatCount)
+    
+    if coroutine ~= nil then
+        local coroutineId = #activeCoroutines + 1
+        activeCoroutines[coroutineId] = coroutine
+        return coroutineId
+    end
+    
+    return nil
+end
+
+-- 停止重复执行
+-- coroutineId: 协程ID
+function CoroutineHelper.StopRepeat(coroutineId)
+    CoroutineHelper.Stop(coroutineId)
+end
+
+-- 便捷方法：创建协程函数（返回一个可以在C#中使用的生成器）
+-- 这个函数返回一个生成器函数，可以直接传给C#的StartCoroutine
+function CoroutineHelper.CreateCoroutine(coroutineFunc)
+    if coroutineFunc == nil or type(coroutineFunc) ~= 'function' then
+        print("[CoroutineHelper] 警告: 协程函数不能为空")
+        return nil
+    end
+    
+    -- 返回一个生成器函数
+    return function()
+        return util.cs_generator(coroutineFunc)
+    end
+end
+
+-- 便捷方法：在协程中等待（简化版）
+-- 这个函数返回一个可以在协程中yield的对象
+function CoroutineHelper.Yield(waitObject)
+    return waitObject
+end
+
+-- 便捷方法：在协程中等待多个协程完成
+-- coroutines: 协程ID数组
+-- callback: 完成回调 function()
+function CoroutineHelper.WaitForAll(coroutines, callback)
+    if coroutines == nil or #coroutines == 0 then
+        if callback then callback() end
+        return
+    end
+    
+    local completed = {}
+    local total = #coroutines
+    
+    -- 检查所有协程是否完成
+    local function CheckComplete()
+        local count = 0
+        for i = 1, total do
+            if completed[i] then
+                count = count + 1
+            end
+        end
+        return count >= total
+    end
+    
+    -- 为每个协程设置完成标记
+    for i, coroutineId in ipairs(coroutines) do
+        -- 这里简化处理，实际应该跟踪协程状态
+        -- 暂时使用延迟检查
+        CoroutineHelper.DelayCall(function()
+            completed[i] = true
+            if CheckComplete() and callback then
+                callback()
+            end
+        end, 0.1)
+    end
+end
+
+-- 便捷方法：在协程中等待任意一个协程完成
+-- coroutines: 协程ID数组
+-- callback: 完成回调 function()
+function CoroutineHelper.WaitForAny(coroutines, callback)
+    if coroutines == nil or #coroutines == 0 then
+        if callback then callback() end
+        return
+    end
+    
+    local completed = false
+    
+    -- 为每个协程设置完成回调
+    for i, coroutineId in ipairs(coroutines) do
+        CoroutineHelper.DelayCall(function()
+            if not completed then
+                completed = true
+                if callback then callback(i) end
+            end
+        end, 0.1)
+    end
+end
+
+-- 获取活动协程数量
+-- 返回: 活动协程数量
+function CoroutineHelper.GetActiveCount()
+    local count = 0
+    for _ in pairs(activeCoroutines) do
+        count = count + 1
+    end
+    return count
+end
+
+-- 清理所有协程
+function CoroutineHelper.Cleanup()
+    CoroutineHelper.StopAll()
+end
+
+-- 示例：在协程中使用
+--[[
+-- 方式1：使用Start启动协程
+function ExampleCoroutine()
+    print("协程开始")
+    
+    -- 等待1秒（注意：在协程函数中需要使用coroutine.yield）
+    coroutine.yield(CoroutineHelper.WaitForSeconds(1.0))
+    print("1秒后")
+    
+    -- 等待60帧
+    coroutine.yield(CoroutineHelper.WaitForFrames(60))
+    print("60帧后")
+    
+    -- 等待一帧
+    coroutine.yield(CoroutineHelper.WaitForEndOfFrame())
+    print("一帧后")
+    
+    print("协程结束")
+end
+
+-- 启动协程
+local coroutineId = CoroutineHelper.Start(ExampleCoroutine)
+
+-- 方式2：延迟执行（不需要协程）
+CoroutineHelper.DelayCall(function()
+    print("延迟执行")
+end, 2.0)
+
+-- 方式3：等待指定秒数后执行
+CoroutineHelper.WaitSeconds(3.0, function()
+    print("3秒后执行")
+end)
+
+-- 方式4：等待指定帧数后执行
+CoroutineHelper.WaitFrames(60, function()
+    print("60帧后执行")
+end)
+
+-- 方式5：重复执行
+local repeatId = CoroutineHelper.Repeat(function()
+    print("重复执行")
+end, 1.0, 5)  -- 每秒执行一次，共5次
+
+-- 停止重复执行
+-- CoroutineHelper.StopRepeat(repeatId)
+
+-- 方式6：等待条件满足
+local someCondition = false
+CoroutineHelper.WaitUntil(function()
+    return someCondition == true
+end, function()
+    print("条件满足")
+end, 10.0)  -- 最多等待10秒
+
+-- 方式7：在MonoBehaviour的协程中使用（需要C#支持）
+-- 如果要在C#的MonoBehaviour中启动Lua协程，可以使用：
+-- local generator = CoroutineHelper.CreateCoroutine(ExampleCoroutine)
+-- CS.SomeMonoBehaviour:StartCoroutine(generator())
+--]]
+
+return CoroutineHelper
+

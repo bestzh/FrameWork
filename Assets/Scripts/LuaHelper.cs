@@ -1343,5 +1343,446 @@ public static class LuaHelper
     }
     
     #endregion
+    
+    #region 事件系统封装
+    
+    /// <summary>
+    /// 注册事件（无参数）
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <param name="callback">回调函数</param>
+    public static void RegisterEvent(string eventName, System.Action callback)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.RegisterEvent(eventName, callback);
+        }
+        else
+        {
+            Debug.LogError("[LuaHelper] EventManager未初始化！");
+        }
+    }
+    
+    /// <summary>
+    /// 注册事件（带参数）
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <param name="callback">回调函数</param>
+    public static void RegisterEvent(string eventName, System.Action<object> callback)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.RegisterEvent(eventName, callback);
+        }
+        else
+        {
+            Debug.LogError("[LuaHelper] EventManager未初始化！");
+        }
+    }
+    
+    /// <summary>
+    /// 注册优先级事件（无参数）
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <param name="callback">回调函数</param>
+    /// <param name="priority">优先级（数字越大优先级越高）</param>
+    public static void RegisterEventWithPriority(string eventName, System.Action callback, int priority)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.RegisterEvent(eventName, callback, priority);
+        }
+        else
+        {
+            Debug.LogError("[LuaHelper] EventManager未初始化！");
+        }
+    }
+    
+    /// <summary>
+    /// 注册优先级事件（带参数）
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <param name="callback">回调函数</param>
+    /// <param name="priority">优先级（数字越大优先级越高）</param>
+    public static void RegisterEventWithPriority(string eventName, System.Action<object> callback, int priority)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.RegisterEvent(eventName, callback, priority);
+        }
+        else
+        {
+            Debug.LogError("[LuaHelper] EventManager未初始化！");
+        }
+    }
+    
+    /// <summary>
+    /// 注销事件（无参数）
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <param name="callback">回调函数</param>
+    public static void UnregisterEvent(string eventName, System.Action callback)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.UnregisterEvent(eventName, callback);
+        }
+    }
+    
+    /// <summary>
+    /// 注销事件（带参数）
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <param name="callback">回调函数</param>
+    public static void UnregisterEvent(string eventName, System.Action<object> callback)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.UnregisterEvent(eventName, callback);
+        }
+    }
+    
+    /// <summary>
+    /// 注销优先级事件（无参数）
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <param name="callback">回调函数</param>
+    /// <param name="priority">优先级</param>
+    public static void UnregisterEventWithPriority(string eventName, System.Action callback, int priority)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.UnregisterEvent(eventName, callback, priority);
+        }
+    }
+    
+    /// <summary>
+    /// 注销优先级事件（带参数）
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <param name="callback">回调函数</param>
+    /// <param name="priority">优先级</param>
+    public static void UnregisterEventWithPriority(string eventName, System.Action<object> callback, int priority)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.UnregisterEvent(eventName, callback, priority);
+        }
+    }
+    
+    /// <summary>
+    /// 注销所有指定事件
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    public static void UnregisterAllEvents(string eventName)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.UnregisterAll(eventName);
+        }
+    }
+    
+    /// <summary>
+    /// 触发事件（无参数）
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    public static void TriggerEvent(string eventName)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.TriggerEvent(eventName);
+        }
+        else
+        {
+            Debug.LogError("[LuaHelper] EventManager未初始化！");
+        }
+    }
+    
+    /// <summary>
+    /// 触发事件（带参数）
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <param name="data">事件数据</param>
+    public static void TriggerEvent(string eventName, object data)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.TriggerEvent(eventName, data);
+        }
+        else
+        {
+            Debug.LogError("[LuaHelper] EventManager未初始化！");
+        }
+    }
+    
+    /// <summary>
+    /// 检查事件是否已注册
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <returns>是否已注册</returns>
+    public static bool HasEvent(string eventName)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            return eventManager.HasEvent(eventName);
+        }
+        return false;
+    }
+    
+    /// <summary>
+    /// 获取事件监听者数量
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    /// <returns>监听者数量</returns>
+    public static int GetEventListenerCount(string eventName)
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            return eventManager.GetListenerCount(eventName);
+        }
+        return 0;
+    }
+    
+    /// <summary>
+    /// 清空所有事件
+    /// </summary>
+    public static void ClearAllEvents()
+    {
+        var eventManager = EventManager.Instance;
+        if (eventManager != null)
+        {
+            eventManager.ClearAllEvents();
+        }
+    }
+    
+    #endregion
+    
+    #region 协程辅助封装
+    
+    /// <summary>
+    /// 启动协程（从Lua函数创建）
+    /// </summary>
+    /// <param name="coroutineFunc">协程函数（返回IEnumerator的函数）</param>
+    /// <returns>协程对象</returns>
+    public static System.Collections.IEnumerator StartCoroutine(System.Func<System.Collections.IEnumerator> coroutineFunc)
+    {
+        var luaManager = LuaManager.Instance;
+        if (luaManager != null && coroutineFunc != null)
+        {
+            var coroutine = coroutineFunc();
+            (luaManager as MonoBehaviour).StartCoroutine(coroutine);
+            return coroutine;
+        }
+        return null;
+    }
+    
+    /// <summary>
+    /// 启动协程（从Lua函数创建，带参数）
+    /// </summary>
+    /// <param name="coroutineFunc">协程函数</param>
+    /// <param name="param">参数</param>
+    /// <returns>协程对象</returns>
+    public static System.Collections.IEnumerator StartCoroutineWithParam(System.Func<object, System.Collections.IEnumerator> coroutineFunc, object param)
+    {
+        var luaManager = LuaManager.Instance;
+        if (luaManager != null && coroutineFunc != null)
+        {
+            var coroutine = coroutineFunc(param);
+            (luaManager as MonoBehaviour).StartCoroutine(coroutine);
+            return coroutine;
+        }
+        return null;
+    }
+    
+    /// <summary>
+    /// 停止协程
+    /// </summary>
+    /// <param name="coroutine">协程对象</param>
+    public static void StopCoroutine(System.Collections.IEnumerator coroutine)
+    {
+        var luaManager = LuaManager.Instance;
+        if (luaManager != null && coroutine != null)
+        {
+            (luaManager as MonoBehaviour).StopCoroutine(coroutine);
+        }
+    }
+    
+    /// <summary>
+    /// 停止所有协程
+    /// </summary>
+    public static void StopAllCoroutines()
+    {
+        var luaManager = LuaManager.Instance;
+        if (luaManager != null)
+        {
+            (luaManager as MonoBehaviour).StopAllCoroutines();
+        }
+    }
+    
+    /// <summary>
+    /// 创建等待秒数的协程对象
+    /// </summary>
+    /// <param name="seconds">等待秒数</param>
+    /// <returns>WaitForSeconds对象</returns>
+    public static UnityEngine.WaitForSeconds WaitForSeconds(float seconds)
+    {
+        return new UnityEngine.WaitForSeconds(seconds);
+    }
+    
+    /// <summary>
+    /// 创建等待帧的协程对象
+    /// </summary>
+    /// <param name="frames">等待帧数</param>
+    /// <returns>WaitForSeconds对象（近似）</returns>
+    public static UnityEngine.WaitForSeconds WaitForFrames(int frames)
+    {
+        // Unity没有WaitForFrames，我们用WaitForSeconds近似
+        return new UnityEngine.WaitForSeconds(frames * Time.deltaTime);
+    }
+    
+    /// <summary>
+    /// 创建等待一帧的协程对象
+    /// </summary>
+    /// <returns>null（表示等待一帧）</returns>
+    public static object WaitForEndOfFrame()
+    {
+        return new UnityEngine.WaitForEndOfFrame();
+    }
+    
+    /// <summary>
+    /// 创建等待固定更新的协程对象
+    /// </summary>
+    /// <returns>WaitForFixedUpdate对象</returns>
+    public static UnityEngine.WaitForFixedUpdate WaitForFixedUpdate()
+    {
+        return new UnityEngine.WaitForFixedUpdate();
+    }
+    
+    /// <summary>
+    /// 等待指定秒数后执行回调
+    /// </summary>
+    /// <param name="seconds">等待秒数</param>
+    /// <param name="callback">回调函数</param>
+    public static void WaitSeconds(float seconds, System.Action callback)
+    {
+        DelayCall(callback, seconds);
+    }
+    
+    /// <summary>
+    /// 等待指定帧数后执行回调
+    /// </summary>
+    /// <param name="frames">等待帧数</param>
+    /// <param name="callback">回调函数</param>
+    public static void WaitFrames(int frames, System.Action callback)
+    {
+        var luaManager = LuaManager.Instance;
+        if (luaManager != null && callback != null)
+        {
+            (luaManager as MonoBehaviour).StartCoroutine(WaitFramesCoroutine(frames, callback));
+        }
+    }
+    
+    /// <summary>
+    /// 等待帧数协程
+    /// </summary>
+    private static IEnumerator WaitFramesCoroutine(int frames, System.Action callback)
+    {
+        for (int i = 0; i < frames; i++)
+        {
+            yield return null;
+        }
+        callback?.Invoke();
+    }
+    
+    /// <summary>
+    /// 等待条件满足后执行回调
+    /// </summary>
+    /// <param name="condition">条件函数（返回bool）</param>
+    /// <param name="callback">回调函数</param>
+    /// <param name="timeout">超时时间（秒，-1表示不超时）</param>
+    public static void WaitUntil(System.Func<bool> condition, System.Action callback, float timeout = -1f)
+    {
+        var luaManager = LuaManager.Instance;
+        if (luaManager != null && condition != null && callback != null)
+        {
+            (luaManager as MonoBehaviour).StartCoroutine(WaitUntilCoroutine(condition, callback, timeout));
+        }
+    }
+    
+    /// <summary>
+    /// 等待条件协程
+    /// </summary>
+    private static IEnumerator WaitUntilCoroutine(System.Func<bool> condition, System.Action callback, float timeout)
+    {
+        float elapsed = 0f;
+        while (!condition())
+        {
+            if (timeout > 0 && elapsed >= timeout)
+            {
+                Debug.LogWarning("[LuaHelper] WaitUntil超时");
+                break;
+            }
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        callback?.Invoke();
+    }
+    
+    /// <summary>
+    /// 重复执行回调（类似InvokeRepeating）
+    /// </summary>
+    /// <param name="callback">回调函数</param>
+    /// <param name="interval">间隔时间（秒）</param>
+    /// <param name="repeatCount">重复次数（-1表示无限重复）</param>
+    /// <returns>协程对象</returns>
+    public static System.Collections.IEnumerator Repeat(System.Action callback, float interval, int repeatCount = -1)
+    {
+        var luaManager = LuaManager.Instance;
+        if (luaManager != null && callback != null)
+        {
+            var coroutine = RepeatCoroutine(callback, interval, repeatCount);
+            (luaManager as MonoBehaviour).StartCoroutine(coroutine);
+            return coroutine;
+        }
+        return null;
+    }
+    
+    /// <summary>
+    /// 重复执行协程
+    /// </summary>
+    private static IEnumerator RepeatCoroutine(System.Action callback, float interval, int repeatCount)
+    {
+        int count = 0;
+        while (repeatCount < 0 || count < repeatCount)
+        {
+            yield return new WaitForSeconds(interval);
+            callback?.Invoke();
+            count++;
+        }
+    }
+    
+    /// <summary>
+    /// 停止重复执行
+    /// </summary>
+    /// <param name="coroutine">协程对象</param>
+    public static void StopRepeat(System.Collections.IEnumerator coroutine)
+    {
+        StopCoroutine(coroutine);
+    }
+    
+    #endregion
 }
 

@@ -1,0 +1,271 @@
+-- 全局事件系统Lua封装
+-- 提供更简洁的Lua API来管理全局事件
+-- 注意：这是全局事件系统，与UIEventSystem不同
+
+local EventHelper = {}
+
+-- 注册事件（无参数）
+-- eventName: 事件名称
+-- callback: 回调函数 function()
+function EventHelper.Register(eventName, callback)
+    if eventName == nil or callback == nil then
+        print("[EventHelper] 警告: 事件名称或回调函数不能为空")
+        return
+    end
+    
+    CS.LuaHelper.RegisterEvent(eventName, callback)
+end
+
+-- 注册事件（带参数）
+-- eventName: 事件名称
+-- callback: 回调函数 function(data) data是事件数据
+function EventHelper.RegisterWithData(eventName, callback)
+    if eventName == nil or callback == nil then
+        print("[EventHelper] 警告: 事件名称或回调函数不能为空")
+        return
+    end
+    
+    CS.LuaHelper.RegisterEvent(eventName, callback)
+end
+
+-- 注册优先级事件（无参数）
+-- eventName: 事件名称
+-- callback: 回调函数 function()
+-- priority: 优先级（数字越大优先级越高，默认0）
+function EventHelper.RegisterWithPriority(eventName, callback, priority)
+    if eventName == nil or callback == nil then
+        print("[EventHelper] 警告: 事件名称或回调函数不能为空")
+        return
+    end
+    
+    priority = priority or 0
+    CS.LuaHelper.RegisterEventWithPriority(eventName, callback, priority)
+end
+
+-- 注册优先级事件（带参数）
+-- eventName: 事件名称
+-- callback: 回调函数 function(data)
+-- priority: 优先级（数字越大优先级越高，默认0）
+function EventHelper.RegisterWithPriorityAndData(eventName, callback, priority)
+    if eventName == nil or callback == nil then
+        print("[EventHelper] 警告: 事件名称或回调函数不能为空")
+        return
+    end
+    
+    priority = priority or 0
+    CS.LuaHelper.RegisterEventWithPriority(eventName, callback, priority)
+end
+
+-- 注销事件（无参数）
+-- eventName: 事件名称
+-- callback: 回调函数 function()
+function EventHelper.Unregister(eventName, callback)
+    if eventName == nil or callback == nil then
+        print("[EventHelper] 警告: 事件名称或回调函数不能为空")
+        return
+    end
+    
+    CS.LuaHelper.UnregisterEvent(eventName, callback)
+end
+
+-- 注销事件（带参数）
+-- eventName: 事件名称
+-- callback: 回调函数 function(data)
+function EventHelper.UnregisterWithData(eventName, callback)
+    if eventName == nil or callback == nil then
+        print("[EventHelper] 警告: 事件名称或回调函数不能为空")
+        return
+    end
+    
+    CS.LuaHelper.UnregisterEvent(eventName, callback)
+end
+
+-- 注销优先级事件（无参数）
+-- eventName: 事件名称
+-- callback: 回调函数 function()
+-- priority: 优先级
+function EventHelper.UnregisterWithPriority(eventName, callback, priority)
+    if eventName == nil or callback == nil then
+        print("[EventHelper] 警告: 事件名称或回调函数不能为空")
+        return
+    end
+    
+    priority = priority or 0
+    CS.LuaHelper.UnregisterEventWithPriority(eventName, callback, priority)
+end
+
+-- 注销优先级事件（带参数）
+-- eventName: 事件名称
+-- callback: 回调函数 function(data)
+-- priority: 优先级
+function EventHelper.UnregisterWithPriorityAndData(eventName, callback, priority)
+    if eventName == nil or callback == nil then
+        print("[EventHelper] 警告: 事件名称或回调函数不能为空")
+        return
+    end
+    
+    priority = priority or 0
+    CS.LuaHelper.UnregisterEventWithPriority(eventName, callback, priority)
+end
+
+-- 注销所有指定事件
+-- eventName: 事件名称
+function EventHelper.UnregisterAll(eventName)
+    if eventName == nil then
+        print("[EventHelper] 警告: 事件名称不能为空")
+        return
+    end
+    
+    CS.LuaHelper.UnregisterAllEvents(eventName)
+end
+
+-- 触发事件（无参数）
+-- eventName: 事件名称
+function EventHelper.Trigger(eventName)
+    if eventName == nil then
+        print("[EventHelper] 警告: 事件名称不能为空")
+        return
+    end
+    
+    CS.LuaHelper.TriggerEvent(eventName)
+end
+
+-- 触发事件（带参数）
+-- eventName: 事件名称
+-- data: 事件数据（可以是任意类型：string, number, bool, table等）
+function EventHelper.TriggerWithData(eventName, data)
+    if eventName == nil then
+        print("[EventHelper] 警告: 事件名称不能为空")
+        return
+    end
+    
+    CS.LuaHelper.TriggerEvent(eventName, data)
+end
+
+-- 检查事件是否已注册
+-- eventName: 事件名称
+-- 返回: true/false
+function EventHelper.HasEvent(eventName)
+    if eventName == nil then
+        return false
+    end
+    
+    return CS.LuaHelper.HasEvent(eventName)
+end
+
+-- 获取事件监听者数量
+-- eventName: 事件名称
+-- 返回: 监听者数量
+function EventHelper.GetListenerCount(eventName)
+    if eventName == nil then
+        return 0
+    end
+    
+    return CS.LuaHelper.GetEventListenerCount(eventName)
+end
+
+-- 清空所有事件
+function EventHelper.ClearAll()
+    CS.LuaHelper.ClearAllEvents()
+end
+
+-- 便捷方法：一次性注册和注销（返回注销函数）
+-- eventName: 事件名称
+-- callback: 回调函数 function() 或 function(data)
+-- priority: 优先级（可选）
+-- 返回: 注销函数
+function EventHelper.RegisterOnce(eventName, callback, priority)
+    if eventName == nil or callback == nil then
+        print("[EventHelper] 警告: 事件名称或回调函数不能为空")
+        return nil
+    end
+    
+    -- 判断回调是否有参数
+    local hasData = false
+    -- 这里我们假设如果提供了priority，可能是带参数的
+    -- 实际使用时，Lua会自动处理
+    
+    if priority then
+        EventHelper.RegisterWithPriority(eventName, callback, priority)
+    else
+        EventHelper.Register(eventName, callback)
+    end
+    
+    -- 返回注销函数
+    return function()
+        if priority then
+            EventHelper.UnregisterWithPriority(eventName, callback, priority)
+        else
+            EventHelper.Unregister(eventName, callback)
+        end
+    end
+end
+
+-- 便捷方法：注册带数据的，返回注销函数
+function EventHelper.RegisterOnceWithData(eventName, callback, priority)
+    if eventName == nil or callback == nil then
+        print("[EventHelper] 警告: 事件名称或回调函数不能为空")
+        return nil
+    end
+    
+    if priority then
+        EventHelper.RegisterWithPriorityAndData(eventName, callback, priority)
+    else
+        EventHelper.RegisterWithData(eventName, callback)
+    end
+    
+    -- 返回注销函数
+    return function()
+        if priority then
+            EventHelper.UnregisterWithPriorityAndData(eventName, callback, priority)
+        else
+            EventHelper.UnregisterWithData(eventName, callback)
+        end
+    end
+end
+
+-- 事件常量（与C#中的GlobalEventNames对应）
+EventHelper.Events = {
+    -- 游戏生命周期事件
+    GAME_START = "GAME_START",
+    GAME_PAUSE = "GAME_PAUSE",
+    GAME_RESUME = "GAME_RESUME",
+    GAME_OVER = "GAME_OVER",
+    GAME_RESTART = "GAME_RESTART",
+    
+    -- 场景事件
+    SCENE_LOAD_START = "SCENE_LOAD_START",
+    SCENE_LOAD_COMPLETE = "SCENE_LOAD_COMPLETE",
+    SCENE_UNLOAD_START = "SCENE_UNLOAD_START",
+    SCENE_UNLOAD_COMPLETE = "SCENE_UNLOAD_COMPLETE",
+    
+    -- 玩家事件
+    PLAYER_SPAWN = "PLAYER_SPAWN",
+    PLAYER_DEATH = "PLAYER_DEATH",
+    PLAYER_REVIVE = "PLAYER_REVIVE",
+    PLAYER_LEVEL_UP = "PLAYER_LEVEL_UP",
+    PLAYER_EXP_CHANGED = "PLAYER_EXP_CHANGED",
+    PLAYER_HP_CHANGED = "PLAYER_HP_CHANGED",
+    PLAYER_MP_CHANGED = "PLAYER_MP_CHANGED",
+    
+    -- 系统事件
+    SETTINGS_CHANGED = "SETTINGS_CHANGED",
+    LANGUAGE_CHANGED = "LANGUAGE_CHANGED",
+    AUDIO_VOLUME_CHANGED = "AUDIO_VOLUME_CHANGED",
+    NETWORK_CONNECTED = "NETWORK_CONNECTED",
+    NETWORK_DISCONNECTED = "NETWORK_DISCONNECTED",
+    
+    -- 资源事件
+    RESOURCE_LOAD_START = "RESOURCE_LOAD_START",
+    RESOURCE_LOAD_COMPLETE = "RESOURCE_LOAD_COMPLETE",
+    RESOURCE_LOAD_FAILED = "RESOURCE_LOAD_FAILED",
+    
+    -- 热更新事件
+    HOTUPDATE_START = "HOTUPDATE_START",
+    HOTUPDATE_PROGRESS = "HOTUPDATE_PROGRESS",
+    HOTUPDATE_COMPLETE = "HOTUPDATE_COMPLETE",
+    HOTUPDATE_FAILED = "HOTUPDATE_FAILED",
+}
+
+return EventHelper
+
