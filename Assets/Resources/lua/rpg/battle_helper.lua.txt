@@ -1,0 +1,76 @@
+-- 战斗系统Lua封装
+-- 提供更简洁的Lua API来管理即时战斗
+
+local BattleHelper = {}
+
+-- 开始战斗
+-- player: CharacterData对象（玩家角色）
+-- enemies: CharacterData数组（敌人列表）
+function BattleHelper.StartBattle(player, enemies)
+    if player == nil or enemies == nil then
+        print("[BattleHelper] 警告: 玩家或敌人不能为空")
+        return
+    end
+    
+    -- 将Lua table转换为C# List
+    local enemyList = CS.System.Collections.Generic.List(CS.CharacterData)()
+    for i = 1, #enemies do
+        enemyList:Add(enemies[i])
+    end
+    
+    CS.BattleManager.Instance:StartBattle(player, enemyList)
+end
+
+-- 玩家攻击
+function BattleHelper.PlayerAttack()
+    CS.BattleManager.Instance:PlayerAttack()
+end
+
+-- 玩家释放技能
+-- skillId: 技能ID
+-- target: 目标角色（可选）
+function BattleHelper.PlayerCastSkill(skillId, target)
+    target = target or nil
+    CS.BattleManager.Instance:PlayerCastSkill(skillId, target)
+end
+
+-- 停止战斗
+function BattleHelper.StopBattle()
+    CS.BattleManager.Instance:StopBattle()
+end
+
+-- 获取战斗状态
+-- 返回: 战斗状态字符串（"None", "Preparing", "InBattle", "Victory", "Defeat"）
+function BattleHelper.GetBattleState()
+    return tostring(CS.BattleManager.Instance.CurrentState)
+end
+
+-- 获取玩家攻击冷却进度（0-1）
+-- 返回: 冷却进度（0表示冷却中，1表示可以攻击）
+function BattleHelper.GetPlayerAttackCooldownProgress()
+    return CS.BattleManager.Instance:GetPlayerAttackCooldownProgress()
+end
+
+-- 检查玩家是否可以攻击
+-- 返回: true/false
+function BattleHelper.CanPlayerAttack()
+    return CS.BattleManager.Instance:CanPlayerAttack()
+end
+
+-- 获取玩家角色
+-- 返回: CharacterData对象
+function BattleHelper.GetPlayer()
+    return CS.BattleManager.Instance.Player
+end
+
+-- 战斗事件常量
+BattleHelper.Events = {
+    BATTLE_START = "BATTLE_START",
+    BATTLE_VICTORY = "BATTLE_VICTORY",
+    BATTLE_DEFEAT = "BATTLE_DEFEAT",
+    PLAYER_ATTACK = "PLAYER_ATTACK",
+    ENEMY_ATTACK = "ENEMY_ATTACK",
+}
+
+return BattleHelper
+

@@ -48,6 +48,9 @@ public class EventManager : MonoBehaviour
     // 优先级事件字典（带参数）
     private Dictionary<string, SortedDictionary<int, List<Action<object>>>> priorityEventDictionaryWithParam = new Dictionary<string, SortedDictionary<int, List<Action<object>>>>();
     
+    // 递归检测：跟踪当前正在处理的事件
+    private HashSet<string> processingEvents = new HashSet<string>();
+    
     [Header("事件系统设置")]
     [SerializeField] private bool logEvents = false;  // 是否记录事件日志
     
@@ -456,18 +459,12 @@ public class EventManager : MonoBehaviour
     #region 事件触发
     
     /// <summary>
-    /// 触发事件（带参数）
+    /// 内部触发方法（带参数）- 不检查递归，由公共方法负责检查
     /// </summary>
     /// <param name="eventName">事件名称</param>
     /// <param name="data">事件数据</param>
-    public void TriggerEvent(string eventName, object data = null)
+    private void TriggerEventInternal(string eventName, object data)
     {
-        if (string.IsNullOrEmpty(eventName))
-        {
-            Debug.LogWarning("[EventManager] 事件名称不能为空");
-            return;
-        }
-        
         // 先触发优先级事件（按优先级从高到低）
         if (priorityEventDictionaryWithParam.ContainsKey(eventName))
         {
@@ -512,10 +509,11 @@ public class EventManager : MonoBehaviour
     }
     
     /// <summary>
-    /// 触发事件（无参数）
+    /// 触发事件（带参数）
     /// </summary>
     /// <param name="eventName">事件名称</param>
-    public void TriggerEvent(string eventName)
+    /// <param name="data">事件数据</param>
+    public void TriggerEvent(string eventName, object data = null)
     {
         if (string.IsNullOrEmpty(eventName))
         {
@@ -523,6 +521,33 @@ public class EventManager : MonoBehaviour
             return;
         }
         
+        // 递归检测：如果当前事件正在处理中，阻止递归调用
+        if (processingEvents.Contains(eventName))
+        {
+            Debug.LogError($"[EventManager] 检测到事件递归调用，已阻止: {eventName}。请检查事件监听器是否在回调中触发了相同的事件。");
+            return;
+        }
+        
+        // 标记事件正在处理
+        processingEvents.Add(eventName);
+        
+        try
+        {
+            TriggerEventInternal(eventName, data);
+        }
+        finally
+        {
+            // 移除处理标记
+            processingEvents.Remove(eventName);
+        }
+    }
+    
+    /// <summary>
+    /// 内部触发方法（无参数）- 不检查递归，由公共方法负责检查
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    private void TriggerEventInternal(string eventName)
+    {
         // 先触发优先级事件（按优先级从高到低）
         if (priorityEventDictionary.ContainsKey(eventName))
         {
@@ -567,6 +592,39 @@ public class EventManager : MonoBehaviour
     }
     
     /// <summary>
+    /// 触发事件（无参数）
+    /// </summary>
+    /// <param name="eventName">事件名称</param>
+    public void TriggerEvent(string eventName)
+    {
+        if (string.IsNullOrEmpty(eventName))
+        {
+            Debug.LogWarning("[EventManager] 事件名称不能为空");
+            return;
+        }
+        
+        // 递归检测：如果当前事件正在处理中，阻止递归调用
+        if (processingEvents.Contains(eventName))
+        {
+            Debug.LogError($"[EventManager] 检测到事件递归调用，已阻止: {eventName}。请检查事件监听器是否在回调中触发了相同的事件。");
+            return;
+        }
+        
+        // 标记事件正在处理
+        processingEvents.Add(eventName);
+        
+        try
+        {
+            TriggerEventInternal(eventName);
+        }
+        finally
+        {
+            // 移除处理标记
+            processingEvents.Remove(eventName);
+        }
+    }
+    
+    /// <summary>
     /// 触发泛型事件
     /// </summary>
     /// <typeparam name="T">事件参数类型</typeparam>
@@ -574,7 +632,32 @@ public class EventManager : MonoBehaviour
     /// <param name="data">事件数据</param>
     public void TriggerEvent<T>(string eventName, T data)
     {
-        TriggerEvent(eventName, data);
+        if (string.IsNullOrEmpty(eventName))
+        {
+            Debug.LogWarning("[EventManager] 事件名称不能为空");
+            return;
+        }
+        
+        // 递归检测：如果当前事件正在处理中，阻止递归调用
+        if (processingEvents.Contains(eventName))
+        {
+            Debug.LogError($"[EventManager] 检测到事件递归调用，已阻止: {eventName}。请检查事件监听器是否在回调中触发了相同的事件。");
+            return;
+        }
+        
+        // 标记事件正在处理
+        processingEvents.Add(eventName);
+        
+        try
+        {
+            // 调用内部方法，避免重复检查递归
+            TriggerEventInternal(eventName, data);
+        }
+        finally
+        {
+            // 移除处理标记
+            processingEvents.Remove(eventName);
+        }
     }
     
     #endregion

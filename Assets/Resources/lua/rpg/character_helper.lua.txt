@@ -1,0 +1,65 @@
+-- 角色系统Lua封装
+-- 提供更简洁的Lua API来管理角色
+
+local CharacterHelper = {}
+
+-- 创建角色
+-- characterId: 角色ID
+-- name: 角色名称
+-- 返回: CharacterData对象
+function CharacterHelper.CreateCharacter(characterId, name)
+    return CS.CharacterManager.Instance:CreateCharacter(characterId, name)
+end
+
+-- 获取角色
+-- characterId: 角色ID
+-- 返回: CharacterData对象
+function CharacterHelper.GetCharacter(characterId)
+    return CS.CharacterManager.Instance:GetCharacter(characterId)
+end
+
+-- 获取玩家角色
+-- 返回: CharacterData对象
+function CharacterHelper.GetPlayerCharacter()
+    return CS.CharacterManager.Instance.PlayerCharacter
+end
+
+-- 设置玩家角色
+-- character: CharacterData对象
+function CharacterHelper.SetPlayerCharacter(character)
+    CS.CharacterManager.Instance:SetPlayerCharacter(character)
+end
+
+-- 角色升级
+-- character: CharacterData对象
+function CharacterHelper.LevelUp(character)
+    CS.CharacterManager.Instance:LevelUp(character)
+end
+
+-- 增加经验
+-- character: CharacterData对象
+-- exp: 经验值
+function CharacterHelper.AddExp(character, exp)
+    CS.CharacterManager.Instance:AddExp(character, exp)
+end
+
+-- 保存角色数据
+-- character: CharacterData对象
+function CharacterHelper.SaveCharacter(character)
+    CS.CharacterManager.Instance:SaveCharacter(character)
+end
+
+-- 加载角色数据
+-- characterId: 角色ID
+-- 返回: CharacterData对象
+function CharacterHelper.LoadCharacter(characterId)
+    return CS.CharacterManager.Instance:LoadCharacter(characterId)
+end
+
+-- 保存所有角色数据
+function CharacterHelper.SaveAllCharacters()
+    CS.CharacterManager.Instance:SaveAllCharacters()
+end
+
+return CharacterHelper
+

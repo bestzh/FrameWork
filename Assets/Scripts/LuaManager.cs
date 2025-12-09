@@ -183,6 +183,18 @@ public class LuaManager : MonoBehaviour
         // 注册全局事件管理器
         luaEnv.Global.Set("EventManager", typeof(EventManager));
         luaEnv.Global.Set("GlobalEventNames", typeof(GlobalEventNames));
+        
+        // 注册RPG系统
+        luaEnv.Global.Set("CharacterManager", typeof(CharacterManager));
+        luaEnv.Global.Set("CharacterData", typeof(CharacterData));
+        luaEnv.Global.Set("BattleManager", typeof(BattleManager));
+        luaEnv.Global.Set("InventoryManager", typeof(InventoryManager));
+        luaEnv.Global.Set("QuestManager", typeof(QuestManager));
+        luaEnv.Global.Set("PlayerController", typeof(PlayerController));
+        luaEnv.Global.Set("EnemyController", typeof(EnemyController));
+        luaEnv.Global.Set("SkillSystem", typeof(SkillSystem));
+        luaEnv.Global.Set("SkillData", typeof(SkillData));
+        luaEnv.Global.Set("ComboManager", typeof(ComboManager));
     }
     
     /// <summary>
