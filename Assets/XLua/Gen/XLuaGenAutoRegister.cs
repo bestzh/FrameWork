@@ -55,6 +55,9 @@ namespace XLua.CSObjectWrap
             translator.DelayWrapLoader(typeof(QuestManager), QuestManagerWrap.__Register);
         
         
+            translator.DelayWrapLoader(typeof(LuaBehaviourBase), LuaBehaviourBaseWrap.__Register);
+        
+        
             translator.DelayWrapLoader(typeof(NPCController), NPCControllerWrap.__Register);
         
         

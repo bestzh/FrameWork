@@ -1,0 +1,320 @@
+---@diagnostic disable: undefined-global
+---@diagnostic disable: unused-local
+-- NPC控制器 - 纯Lua实现
+-- 所有NPC逻辑都在Lua中，支持热更新
+
+local NPCController = {}
+
+-- NPC数据表
+local npcInstances = {}
+
+-- 初始化NPC控制器
+function NPCController.Initialize(npcGameObject, configData)
+    local npc = {
+        gameObject = npcGameObject,
+        transform = npcGameObject.transform,
+        configID = configData.ID,
+        npcName = configData.Name,
+        dialogueText = configData.DialogueText,
+        interactionDistance = tonumber(configData.InteractionDistance),
+        interactionKey = configData.InteractionKey,
+        positionX = tonumber(configData.PositionX),
+        positionY = tonumber(configData.PositionY),
+        positionZ = tonumber(configData.PositionZ),
+        rotationY = tonumber(configData.RotationY),
+        
+        -- 运行时状态
+        player = nil,
+        isPlayerNearby = false,
+        isInteracting = false,
+        interactionHint = nil,
+        targetCamera = nil,
+        useTablePosition = true
+    }
+    
+    -- 设置位置和旋转
+    if npc.useTablePosition then
+        npc.transform.localPosition = UnityEngine.Vector3(npc.positionX, npc.positionY, npc.positionZ)
+        npc.transform.localRotation = UnityEngine.Quaternion.Euler(0, npc.rotationY, 0)
+    end
+    
+    -- 解析交互按键
+    if npc.interactionKey and npc.interactionKey ~= "" then
+        local keyCode = CS.UnityEngine.KeyCode
+        local success, key = pcall(function()
+            return CS.System.Enum.Parse(typeof(keyCode), npc.interactionKey)
+        end)
+        if success and key then
+            npc.interactionKeyCode = key
+        else
+            print("[NPCController] 无效的交互按键: " .. npc.interactionKey .. "，使用默认值E")
+            npc.interactionKeyCode = keyCode.E
+        end
+    else
+        npc.interactionKeyCode = CS.UnityEngine.KeyCode.E
+    end
+    
+    -- 查找玩家对象
+    npc.player = UnityEngine.GameObject.FindGameObjectWithTag("Player")
+    if npc.player == nil then
+        print("[NPCController] 警告: 未找到Player对象（Tag: Player），NPC: " .. npc.npcName)
+    end
+    
+    -- 获取相机
+    npc.targetCamera = NPCController.GetMainCamera()
+    
+    -- 创建交互提示
+    NPCController.CreateInteractionHint(npc)
+    
+    -- 存储NPC实例
+    npcInstances[npcGameObject:GetInstanceID()] = npc
+    
+    print("[NPCController] 已初始化NPC ID=" .. npc.configID .. ", Name=" .. npc.npcName .. 
+          ", Position=(" .. npc.positionX .. ", " .. npc.positionY .. ", " .. npc.positionZ .. ")")
+    
+    return npc
+end
+
+-- 获取主相机
+function NPCController.GetMainCamera()
+    -- 优先查找CinemachineBrain
+    local cinemachineBrain = CS.UnityEngine.Object.FindFirstObjectByType(typeof(CS.Unity.Cinemachine.CinemachineBrain))
+    if cinemachineBrain ~= nil and cinemachineBrain.OutputCamera ~= nil then
+        return cinemachineBrain.OutputCamera
+    end
+    
+    -- 如果没有Cinemachine，使用Camera.main
+    if CS.UnityEngine.Camera.main ~= nil then
+        return CS.UnityEngine.Camera.main
+    end
+    
+    -- 最后尝试查找任何激活的相机
+    local cameras = CS.UnityEngine.Object.FindObjectsOfType(typeof(CS.UnityEngine.Camera))
+    for i = 0, cameras.Length - 1 do
+        local cam = cameras[i]
+        if cam.enabled and cam.gameObject.activeInHierarchy then
+            return cam
+        end
+    end
+    
+    return nil
+end
+
+-- 创建交互提示UI
+function NPCController.CreateInteractionHint(npc)
+    -- 创建Canvas
+    local canvasObj = CS.UnityEngine.GameObject("InteractionHint")
+    canvasObj.transform:SetParent(npc.transform)
+    canvasObj.transform.localPosition = CS.UnityEngine.Vector3.zero
+    
+    -- 尝试获取Unity UI类型并添加组件
+    local success, canvas = pcall(function()
+        return canvasObj:AddComponent(typeof(CS.UnityEngine.UI.Canvas))
+    end)
+    
+    if not success or canvas == nil then
+        print("[NPCController] 错误: 无法添加Canvas组件, success=" .. tostring(success))
+        -- 尝试备用方法：直接使用类型
+        canvas = canvasObj:AddComponent(CS.UnityEngine.UI.Canvas)
+        if canvas == nil then
+            print("[NPCController] 错误: 备用方法也失败")
+            return
+        end
+    end
+    if canvas == nil then
+        print("[NPCController] 错误: 无法添加Canvas组件")
+        return
+    end
+    canvas.renderMode = CS.UnityEngine.RenderMode.WorldSpace
+    canvas.worldCamera = npc.targetCamera ~= nil and npc.targetCamera or CS.UnityEngine.Camera.main
+    
+    local success2, scaler = pcall(function()
+        return canvasObj:AddComponent(typeof(CS.UnityEngine.UI.CanvasScaler))
+    end)
+    if success2 and scaler ~= nil then
+        scaler.uiScaleMode = CS.UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize
+        scaler.referenceResolution = CS.UnityEngine.Vector2(1920, 1080)
+    end
+    
+    -- 创建文本
+    local textObj = CS.UnityEngine.GameObject("HintText")
+    textObj.transform:SetParent(canvasObj.transform)
+    textObj.transform.localPosition = CS.UnityEngine.Vector3(0, 2, 0)
+    textObj.transform.localScale = CS.UnityEngine.Vector3.one * 0.01
+    
+    local success3, text = pcall(function()
+        return textObj:AddComponent(typeof(CS.UnityEngine.UI.Text))
+    end)
+    if success3 and text ~= nil then
+        text.text = "按 " .. npc.interactionKey .. " 交互"
+        local success4, font = pcall(function()
+            return CS.UnityEngine.Resources.GetBuiltinResource(typeof(CS.UnityEngine.Font), "LegacyRuntime.ttf")
+        end)
+        if success4 and font ~= nil then
+            text.font = font
+        end
+        text.fontSize = 30
+        text.color = CS.UnityEngine.Color.white
+        text.alignment = CS.UnityEngine.UI.TextAnchor.MiddleCenter
+    end
+    
+    -- 添加背景
+    local bgObj = CS.UnityEngine.GameObject("Background")
+    bgObj.transform:SetParent(textObj.transform)
+    bgObj.transform.localPosition = CS.UnityEngine.Vector3.zero
+    bgObj.transform.localScale = CS.UnityEngine.Vector3.one
+    
+    local success5, bg = pcall(function()
+        return bgObj:AddComponent(typeof(CS.UnityEngine.UI.Image))
+    end)
+    if success5 and bg ~= nil then
+        bg.color = CS.UnityEngine.Color(0, 0, 0, 0.7)
+    end
+    
+    local success6, bgRect = pcall(function()
+        return bgObj:GetComponent(typeof(CS.UnityEngine.RectTransform))
+    end)
+    local success7, textRect = pcall(function()
+        return textObj:GetComponent(typeof(CS.UnityEngine.RectTransform))
+    end)
+    if success6 and success7 and bgRect ~= nil and textRect ~= nil then
+        bgRect.anchorMin = CS.UnityEngine.Vector2.zero
+        bgRect.anchorMax = CS.UnityEngine.Vector2.one
+        bgRect.sizeDelta = CS.UnityEngine.Vector2(20, 20)
+    end
+    
+    npc.interactionHint = canvasObj
+    canvasObj:SetActive(false)
+end
+
+-- 更新提示位置
+function NPCController.UpdateHintPosition(npc)
+    if npc.interactionHint == nil then
+        return
+    end
+    
+    -- 重新获取相机
+    if npc.targetCamera == nil or not npc.targetCamera.gameObject.activeInHierarchy then
+        npc.targetCamera = NPCController.GetMainCamera()
+    end
+    
+    if npc.targetCamera == nil then
+        return
+    end
+    
+    -- 让提示始终面向相机
+    local directionToCamera = npc.targetCamera.transform.position - npc.interactionHint.transform.position
+    directionToCamera.y = 0  -- 保持水平
+    if directionToCamera ~= CS.UnityEngine.Vector3.zero then
+        npc.interactionHint.transform.rotation = CS.UnityEngine.Quaternion.LookRotation(-directionToCamera)
+    end
+    
+    -- 将提示放在NPC上方
+    npc.interactionHint.transform.position = npc.transform.position + CS.UnityEngine.Vector3.up * 2
+end
+
+-- 与NPC交互
+function NPCController.Interact(npc)
+    if npc.isInteracting then
+        return
+    end
+    
+    npc.isInteracting = true
+    
+    print("[NPC] " .. npc.npcName .. ": " .. npc.dialogueText)
+    
+    -- 发送交互事件
+    if CS.EventManager.Instance ~= nil then
+        CS.EventManager.Instance:TriggerEvent("NPC_Interact", npc)
+    end
+    
+    -- 显示对话
+    NPCController.ShowDialogue(npc)
+    
+    -- 设置重置计时器
+    npc.interactResetTime = CS.UnityEngine.Time.time + 0.5
+end
+
+-- 显示对话
+function NPCController.ShowDialogue(npc)
+    -- TODO: 集成UI系统显示对话界面
+    -- 目前使用简单的print输出
+    print("=== " .. npc.npcName .. " ===")
+    print(npc.dialogueText)
+end
+
+-- 获取NPC实例
+function NPCController.GetNPC(instanceID)
+    return npcInstances[instanceID]
+end
+
+-- Start回调（由LuaBehaviourBase调用）
+function NPCController.Start(behaviour)
+    local npc = npcInstances[behaviour.gameObject:GetInstanceID()]
+    if npc == nil then
+        print("[NPCController] 警告: 未找到NPC实例，GameObject ID: " .. behaviour.gameObject:GetInstanceID())
+    end
+end
+
+-- Update回调（由LuaBehaviourBase调用）
+function NPCController.Update(behaviour)
+    local npc = npcInstances[behaviour.gameObject:GetInstanceID()]
+    if npc == nil then
+        return
+    end
+    
+    if npc.player == nil then
+        return
+    end
+    
+    -- 计算玩家距离
+    local distance = CS.UnityEngine.Vector3.Distance(npc.transform.position, npc.player.transform.position)
+    local wasNearby = npc.isPlayerNearby
+    npc.isPlayerNearby = distance <= npc.interactionDistance
+    
+    -- 显示/隐藏交互提示
+    if npc.interactionHint ~= nil then
+        npc.interactionHint:SetActive(npc.isPlayerNearby and not npc.isInteracting)
+    end
+    
+    -- 检测交互输入
+    if npc.isPlayerNearby and not npc.isInteracting and CS.UnityEngine.Input.GetKeyDown(npc.interactionKeyCode) then
+        NPCController.Interact(npc)
+    end
+    
+    -- 更新提示位置（跟随NPC）
+    if npc.interactionHint ~= nil and npc.isPlayerNearby then
+        NPCController.UpdateHintPosition(npc)
+    end
+    
+    -- 检查重置交互状态
+    if npc.interactResetTime and CS.UnityEngine.Time.time >= npc.interactResetTime then
+        npc.isInteracting = false
+        npc.interactResetTime = nil
+    end
+end
+
+-- OnDestroy回调
+function NPCController.OnDestroy(behaviour)
+    local instanceID = behaviour.gameObject:GetInstanceID()
+    if npcInstances[instanceID] then
+        npcInstances[instanceID] = nil
+    end
+end
+
+-- OnDrawGizmosSelected回调
+function NPCController.OnDrawGizmosSelected(behaviour)
+    local npc = npcInstances[behaviour.gameObject:GetInstanceID()]
+    if npc == nil then
+        return
+    end
+    
+    -- 绘制交互范围（需要在C#中实现，这里只是占位）
+    -- Gizmos功能在Lua中较难实现，可以保留在C#中或通过C#辅助类实现
+end
+
+-- 将NPCController导出为全局，供LuaBehaviourBase访问
+_G.NPCController = NPCController
+
+return NPCController
+

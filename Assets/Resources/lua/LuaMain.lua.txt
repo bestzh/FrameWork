@@ -10,6 +10,8 @@ SceneHelper = require("scene_helper")
 AudioHelper = require("audio_helper")
 SaveHelper = require("save_helper")
 EventHelper = require("event_helper")
+Table = CS.Table
+UnityEngine = CS.UnityEngine
 
 require("game.gamestart")
 

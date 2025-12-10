@@ -21,15 +21,15 @@ namespace XLua.CSObjectWrap
         {
 			ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
 			System.Type type = typeof(NPCController);
-			Utils.BeginObjectRegister(type, L, translator, 0, 3, 8, 8);
+			Utils.BeginObjectRegister(type, L, translator, 0, 4, 7, 7);
 			
+			Utils.RegisterFunc(L, Utils.METHOD_IDX, "InitializeFromLua", _m_InitializeFromLua);
 			Utils.RegisterFunc(L, Utils.METHOD_IDX, "Interact", _m_Interact);
 			Utils.RegisterFunc(L, Utils.METHOD_IDX, "IsPlayerInRange", _m_IsPlayerInRange);
 			Utils.RegisterFunc(L, Utils.METHOD_IDX, "GetPlayerDistance", _m_GetPlayerDistance);
 			
 			
 			Utils.RegisterFunc(L, Utils.GETTER_IDX, "configID", _g_get_configID);
-            Utils.RegisterFunc(L, Utils.GETTER_IDX, "useTablePosition", _g_get_useTablePosition);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "npcName", _g_get_npcName);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "dialogueText", _g_get_dialogueText);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "interactionDistance", _g_get_interactionDistance);
@@ -38,7 +38,6 @@ namespace XLua.CSObjectWrap
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "showGizmos", _g_get_showGizmos);
             
 			Utils.RegisterFunc(L, Utils.SETTER_IDX, "configID", _s_set_configID);
-            Utils.RegisterFunc(L, Utils.SETTER_IDX, "useTablePosition", _s_set_useTablePosition);
             Utils.RegisterFunc(L, Utils.SETTER_IDX, "npcName", _s_set_npcName);
             Utils.RegisterFunc(L, Utils.SETTER_IDX, "dialogueText", _s_set_dialogueText);
             Utils.RegisterFunc(L, Utils.SETTER_IDX, "interactionDistance", _s_set_interactionDistance);
@@ -89,6 +88,42 @@ namespace XLua.CSObjectWrap
         
         
         
+        
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int _m_InitializeFromLua(RealStatePtr L)
+        {
+		    try {
+            
+                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
+            
+            
+                NPCController gen_to_be_invoked = (NPCController)translator.FastGetCSObj(L, 1);
+            
+            
+                
+                {
+                    uint _id = LuaAPI.xlua_touint(L, 2);
+                    string _name = LuaAPI.lua_tostring(L, 3);
+                    string _dialogue = LuaAPI.lua_tostring(L, 4);
+                    float _distance = (float)LuaAPI.lua_tonumber(L, 5);
+                    string _key = LuaAPI.lua_tostring(L, 6);
+                    float _posX = (float)LuaAPI.lua_tonumber(L, 7);
+                    float _posY = (float)LuaAPI.lua_tonumber(L, 8);
+                    float _posZ = (float)LuaAPI.lua_tonumber(L, 9);
+                    float _rotY = (float)LuaAPI.lua_tonumber(L, 10);
+                    
+                    gen_to_be_invoked.InitializeFromLua( _id, _name, _dialogue, _distance, _key, _posX, _posY, _posZ, _rotY );
+                    
+                    
+                    
+                    return 0;
+                }
+                
+            } catch(System.Exception gen_e) {
+                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
+            }
+            
+        }
         
         [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
         static int _m_Interact(RealStatePtr L)
@@ -191,20 +226,6 @@ namespace XLua.CSObjectWrap
         }
         
         [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
-        static int _g_get_useTablePosition(RealStatePtr L)
-        {
-		    try {
-                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
-			
-                NPCController gen_to_be_invoked = (NPCController)translator.FastGetCSObj(L, 1);
-                LuaAPI.lua_pushboolean(L, gen_to_be_invoked.useTablePosition);
-            } catch(System.Exception gen_e) {
-                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
-            }
-            return 1;
-        }
-        
-        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
         static int _g_get_npcName(RealStatePtr L)
         {
 		    try {
@@ -298,21 +319,6 @@ namespace XLua.CSObjectWrap
 			
                 NPCController gen_to_be_invoked = (NPCController)translator.FastGetCSObj(L, 1);
                 gen_to_be_invoked.configID = LuaAPI.xlua_touint(L, 2);
-            
-            } catch(System.Exception gen_e) {
-                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
-            }
-            return 0;
-        }
-        
-        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
-        static int _s_set_useTablePosition(RealStatePtr L)
-        {
-		    try {
-                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
-			
-                NPCController gen_to_be_invoked = (NPCController)translator.FastGetCSObj(L, 1);
-                gen_to_be_invoked.useTablePosition = LuaAPI.lua_toboolean(L, 2);
             
             } catch(System.Exception gen_e) {
                 return LuaAPI.luaL_error(L, "c# exception:" + gen_e);

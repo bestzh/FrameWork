@@ -14,6 +14,7 @@
 		<type fullname="PlayerAnimationController" preserve="all"/>
 		<type fullname="PlayerController" preserve="all"/>
 		<type fullname="QuestManager" preserve="all"/>
+		<type fullname="LuaBehaviourBase" preserve="all"/>
 		<type fullname="NPCController" preserve="all"/>
 		<type fullname="PortalController" preserve="all"/>
 		<type fullname="Tutorial.BaseClass" preserve="all"/>

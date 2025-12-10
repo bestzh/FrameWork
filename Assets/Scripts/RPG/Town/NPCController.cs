@@ -14,8 +14,6 @@ public class NPCController : MonoBehaviour
     [Tooltip("配置ID（0表示使用Inspector中的值，>0表示从表格读取）")]
     public uint configID = 0;
     
-    [Tooltip("是否使用表格中的位置（如果为true，会覆盖当前GameObject的位置）")]
-    public bool useTablePosition = true;
     
     [Header("NPC信息（如果configID为0则使用这些值）")]
     [Tooltip("NPC名称")]
@@ -29,7 +27,7 @@ public class NPCController : MonoBehaviour
     [Tooltip("交互距离")]
     public float interactionDistance = 2f;
     
-    [Tooltip("交互提示UI（可选，会自动创建）")]
+    [Tooltip("交互提示UI（在Inspector中指定，通常是NPC预制体的子对象）")]
     public GameObject interactionHint;
     
     [Tooltip("交互按键（默认E键）")]
@@ -46,84 +44,107 @@ public class NPCController : MonoBehaviour
     
     void Start()
     {
-        // 从表格加载配置（如果configID有效）
-        LoadConfigFromTable();
-        
-        // 查找玩家对象
-        player = GameObject.FindGameObjectWithTag("Player");
-        if (player == null)
+        // 初始化交互提示UI（如果Inspector中已指定）
+        if (interactionHint != null)
         {
-            Debug.LogWarning($"[NPCController] 未找到Player对象（Tag: Player），NPC: {npcName}");
-        }
-        
-        // 获取相机引用
-        targetCamera = GetMainCamera();
-        
-        // 创建交互提示（如果还没有）
-        if (interactionHint == null)
-        {
-            CreateInteractionHint();
-        }
-        else
-        {
+            UpdateHintText();
             interactionHint.SetActive(false);
         }
     }
     
     /// <summary>
-    /// 从表格加载配置
+    /// 延迟初始化玩家对象（在需要时调用）
     /// </summary>
-    void LoadConfigFromTable()
+    void EnsurePlayerInitialized()
     {
-        if (configID == 0) return; // 使用Inspector中的值
-        
-        // 确保表格已加载
-        if (Table.TableManager.Instance != null)
+        if (player == null)
         {
-            Table.TableManager.Instance.Load();
-        }
-        
-        // 尝试从表格读取配置
-        try
-        {
-            if (Table.NPCConfig.Contains(configID))
+            player = GameObject.FindGameObjectWithTag("Player");
+            if (player == null)
             {
-                var config = Table.NPCConfig.Get(configID);
-                npcName = config.Name;
-                dialogueText = config.DialogueText;
-                interactionDistance = float.Parse(config.InteractionDistance);
-                
-                // 解析交互按键字符串
-                if (!string.IsNullOrEmpty(config.InteractionKey))
-                {
-                    if (System.Enum.TryParse<KeyCode>(config.InteractionKey, out KeyCode key))
-                    {
-                        interactionKey = key;
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[NPCController] 无效的交互按键: {config.InteractionKey}，使用默认值E");
-                    }
-                }
-                
-                // 设置位置（如果启用）
-                if (useTablePosition)
-                {
-                    transform.position = new Vector3(float.Parse(config.PositionX), float.Parse(config.PositionY), float.Parse(config.PositionZ));
-                    transform.rotation = Quaternion.Euler(0, float.Parse(config.RotationY), 0);
-                }
-                
-                Debug.Log($"[NPCController] 已从表格加载配置 ID={configID}, Name={npcName}, Position=({config.PositionX}, {config.PositionY}, {config.PositionZ})");
-            }
-            else
-            {
-                Debug.LogWarning($"[NPCController] 表格中未找到配置ID={configID}，使用Inspector中的值");
+                Debug.LogWarning($"[NPCController] 未找到Player对象（Tag: Player），NPC: {npcName}");
             }
         }
-        catch (System.Exception e)
+    }
+    
+    /// <summary>
+    /// 延迟初始化相机（在需要时调用）
+    /// </summary>
+    void EnsureCameraInitialized()
+    {
+        if (targetCamera == null)
         {
-            Debug.LogError($"[NPCController] 加载表格配置失败: {e.Message}，使用Inspector中的值");
+            targetCamera = GetMainCamera();
         }
+    }
+    
+    /// <summary>
+    /// 更新提示文本内容（显示交互按键）
+    /// </summary>
+    void UpdateHintText()
+    {
+        if (interactionHint == null) return;
+        
+        // 查找HintText子对象
+        Transform hintTextTransform = interactionHint.transform.Find("HintText");
+        if (hintTextTransform != null)
+        {
+            UnityEngine.UI.Text text = hintTextTransform.GetComponent<UnityEngine.UI.Text>();
+            if (text != null)
+            {
+                text.text = $"按 {interactionKey} 交互";
+            }
+        }
+    }
+    
+    
+    /// <summary>
+    /// 解析交互按键字符串
+    /// </summary>
+    void ParseInteractionKey(string keyStr)
+    {
+        if (string.IsNullOrEmpty(keyStr)) return;
+        
+        if (System.Enum.TryParse<KeyCode>(keyStr, out KeyCode keyCode))
+        {
+            interactionKey = keyCode;
+        }
+        else
+        {
+            Debug.LogWarning($"[NPCController] 无效的交互按键: {keyStr}，使用默认值E");
+            interactionKey = KeyCode.E;
+        }
+    }
+    
+    /// <summary>
+    /// 从Lua初始化NPC配置（供Lua脚本调用）
+    /// 核心逻辑：C#负责所有配置的应用和验证
+    /// </summary>
+    /// <param name="id">配置ID</param>
+    /// <param name="name">NPC名称</param>
+    /// <param name="dialogue">对话文本</param>
+    /// <param name="distance">交互距离</param>
+    /// <param name="key">交互按键字符串</param>
+    /// <param name="posX">X坐标</param>
+    /// <param name="posY">Y坐标</param>
+    /// <param name="posZ">Z坐标</param>
+    /// <param name="rotY">Y轴旋转角度</param>
+    public void InitializeFromLua(uint id, string name, string dialogue, float distance, string key, float posX, float posY, float posZ, float rotY)
+    {
+        // 核心逻辑：C#负责所有配置的应用和验证
+        configID = id;
+        
+        // 应用配置
+        npcName = name;
+        dialogueText = dialogue;
+        interactionDistance = distance;
+        ParseInteractionKey(key);
+        
+        // 设置位置和旋转（核心逻辑在C#）
+        transform.localPosition = new Vector3(posX, posY, posZ);
+        transform.localRotation = Quaternion.Euler(0, rotY, 0);
+        
+        Debug.Log($"[NPCController] 已从Lua初始化配置 ID={id}, Name={name}, Position=({posX}, {posY}, {posZ}), RotationY={rotY}");
     }
     
     /// <summary>
@@ -159,6 +180,8 @@ public class NPCController : MonoBehaviour
     
     void Update()
     {
+        // 延迟初始化玩家对象
+        EnsurePlayerInitialized();
         if (player == null) return;
         
         // 计算玩家距离
@@ -166,8 +189,8 @@ public class NPCController : MonoBehaviour
         bool wasNearby = isPlayerNearby;
         isPlayerNearby = distance <= interactionDistance;
         
-        // 显示/隐藏交互提示
-        if (interactionHint != null)
+        // 只在状态改变时更新UI（性能优化）
+        if (wasNearby != isPlayerNearby && interactionHint != null)
         {
             interactionHint.SetActive(isPlayerNearby && !isInteracting);
         }
@@ -178,61 +201,11 @@ public class NPCController : MonoBehaviour
             Interact();
         }
         
-        // 更新提示位置（跟随NPC）
-        if (interactionHint != null && isPlayerNearby)
+        // 更新提示位置（只在玩家附近时更新，减少计算）
+        if (isPlayerNearby && interactionHint != null && interactionHint.activeSelf)
         {
             UpdateHintPosition();
         }
-    }
-    
-    /// <summary>
-    /// 创建交互提示UI
-    /// </summary>
-    void CreateInteractionHint()
-    {
-        // 创建一个简单的Canvas作为提示
-        GameObject canvasObj = new GameObject("InteractionHint");
-        canvasObj.transform.SetParent(transform);
-        canvasObj.transform.localPosition = Vector3.zero;
-        
-        Canvas canvas = canvasObj.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.WorldSpace;
-        canvas.worldCamera = targetCamera != null ? targetCamera : Camera.main;
-        
-        CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        
-        // 创建文本
-        GameObject textObj = new GameObject("HintText");
-        textObj.transform.SetParent(canvasObj.transform);
-        textObj.transform.localPosition = new Vector3(0, 2f, 0);
-        textObj.transform.localScale = Vector3.one * 0.01f;
-        
-        UnityEngine.UI.Text text = textObj.AddComponent<UnityEngine.UI.Text>();
-        text.text = $"按 {interactionKey} 交互";
-        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        text.fontSize = 30;
-        text.color = Color.white;
-        text.alignment = TextAnchor.MiddleCenter;
-        
-        // 添加背景
-        GameObject bgObj = new GameObject("Background");
-        bgObj.transform.SetParent(textObj.transform);
-        bgObj.transform.localPosition = Vector3.zero;
-        bgObj.transform.localScale = Vector3.one;
-        
-        UnityEngine.UI.Image bg = bgObj.AddComponent<UnityEngine.UI.Image>();
-        bg.color = new Color(0, 0, 0, 0.7f);
-        
-        RectTransform bgRect = bgObj.GetComponent<RectTransform>();
-        RectTransform textRect = textObj.GetComponent<RectTransform>();
-        bgRect.anchorMin = Vector2.zero;
-        bgRect.anchorMax = Vector2.one;
-        bgRect.sizeDelta = new Vector2(20, 20);
-        
-        interactionHint = canvasObj;
-        interactionHint.SetActive(false);
     }
     
     /// <summary>
