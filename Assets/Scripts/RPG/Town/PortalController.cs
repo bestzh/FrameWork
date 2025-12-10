@@ -4,11 +4,19 @@ using XLua;
 
 /// <summary>
 /// 传送门控制器 - 管理传送门的交互和场景切换功能
+/// 支持从表格配置读取数据
 /// </summary>
 [XLua.LuaCallCSharp]
 public class PortalController : MonoBehaviour
 {
-    [Header("传送门信息")]
+    [Header("配置方式")]
+    [Tooltip("配置ID（0表示使用Inspector中的值，>0表示从表格读取）")]
+    public uint configID = 0;
+    
+    [Tooltip("是否使用表格中的位置（如果为true，会覆盖当前GameObject的位置）")]
+    public bool useTablePosition = true;
+    
+    [Header("传送门信息（如果configID为0则使用这些值）")]
     [Tooltip("传送门名称")]
     public string portalName = "传送门";
     
@@ -51,6 +59,9 @@ public class PortalController : MonoBehaviour
     
     void Start()
     {
+        // 从表格加载配置（如果configID有效）
+        LoadConfigFromTable();
+        
         // 查找玩家对象
         player = GameObject.FindGameObjectWithTag("Player");
         if (player == null)
@@ -75,6 +86,98 @@ public class PortalController : MonoBehaviour
         if (string.IsNullOrEmpty(targetSceneName))
         {
             Debug.LogWarning($"[PortalController] 传送门 {portalName} 未设置目标场景名称！");
+        }
+    }
+    
+    /// <summary>
+    /// 从表格加载配置
+    /// </summary>
+    void LoadConfigFromTable()
+    {
+        if (configID == 0) return; // 使用Inspector中的值
+        
+        // 确保表格已加载
+        if (Table.TableManager.Instance != null)
+        {
+            Table.TableManager.Instance.Load();
+        }
+        
+        // 尝试从表格读取配置
+        try
+        {
+            if (Table.PortalConfig.Contains(configID))
+            {
+                var config = Table.PortalConfig.Get(configID);
+                portalName = config.Name;
+                targetSceneName = config.TargetSceneName;
+                portalDescription = config.Description;
+                
+                // 解析字符串类型的 float 值
+                if (!string.IsNullOrEmpty(config.InteractionDistance))
+                {
+                    if (float.TryParse(config.InteractionDistance, out float distance))
+                    {
+                        interactionDistance = distance;
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[PortalController] 无效的交互距离: {config.InteractionDistance}，使用默认值");
+                    }
+                }
+                
+                if (!string.IsNullOrEmpty(config.TeleportDelay))
+                {
+                    if (float.TryParse(config.TeleportDelay, out float delay))
+                    {
+                        teleportDelay = delay;
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[PortalController] 无效的传送延迟: {config.TeleportDelay}，使用默认值");
+                    }
+                }
+                
+                // 解析交互按键字符串
+                if (!string.IsNullOrEmpty(config.InteractionKey))
+                {
+                    if (System.Enum.TryParse<KeyCode>(config.InteractionKey, out KeyCode key))
+                    {
+                        interactionKey = key;
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[PortalController] 无效的交互按键: {config.InteractionKey}，使用默认值E");
+                    }
+                }
+                
+                // 设置位置（如果启用）
+                if (useTablePosition)
+                {
+                    float posX = 0f, posY = 0f, posZ = 0f, rotY = 0f;
+                    
+                    if (!string.IsNullOrEmpty(config.PositionX))
+                        float.TryParse(config.PositionX, out posX);
+                    if (!string.IsNullOrEmpty(config.PositionY))
+                        float.TryParse(config.PositionY, out posY);
+                    if (!string.IsNullOrEmpty(config.PositionZ))
+                        float.TryParse(config.PositionZ, out posZ);
+                    if (!string.IsNullOrEmpty(config.RotationY))
+                        float.TryParse(config.RotationY, out rotY);
+                    
+                    transform.position = new Vector3(posX, posY, posZ);
+                    transform.rotation = Quaternion.Euler(0, rotY, 0);
+                }
+                
+                Debug.Log($"[PortalController] 已从表格加载配置 ID={configID}, Name={portalName}, TargetScene={targetSceneName}, Position=({config.PositionX}, {config.PositionY}, {config.PositionZ})");
+            }
+            else
+            {
+                Debug.LogWarning($"[PortalController] 表格中未找到配置ID={configID}，使用Inspector中的值");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[PortalController] 加载表格配置失败: {e.Message}，使用Inspector中的值");
         }
     }
     

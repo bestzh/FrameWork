@@ -13,6 +13,8 @@ function EventHelper.Register(eventName, callback)
         return
     end
     
+    -- 使用 LuaHelper 的静态方法，它有明确的类型签名
+    -- 如果 LuaHelper.RegisterEvent 不存在，会报错，需要重新生成 wrap 代码
     CS.LuaHelper.RegisterEvent(eventName, callback)
 end
 
@@ -25,7 +27,9 @@ function EventHelper.RegisterWithData(eventName, callback)
         return
     end
     
-    CS.LuaHelper.RegisterEvent(eventName, callback)
+    -- 直接传递 Lua 函数
+    -- XLua 会自动将带一个参数的 Lua 函数转换为 Action<object>
+    CS.EventManager.Instance.RegisterEvent(eventName, callback)
 end
 
 -- 注册优先级事件（无参数）

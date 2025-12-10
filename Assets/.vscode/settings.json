@@ -8,5 +8,8 @@
     },
     "editor.codeActionsOnSave": {
 
-    }
+    },
+    "Lua.diagnostics.disable": [
+        "unused-local"
+    ]
 }

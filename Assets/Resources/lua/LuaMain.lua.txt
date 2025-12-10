@@ -9,9 +9,10 @@ PoolHelper = require("pool_helper")
 SceneHelper = require("scene_helper")
 AudioHelper = require("audio_helper")
 SaveHelper = require("save_helper")
--- 全局Start函数（由GameInitializer调用）
+EventHelper = require("event_helper")
+
+require("game.gamestart")
+
 function Start()
-    print("[LuaMain] Start函数被调用")
-    
-    UIHelper.LoadLuaUI("MainUI", "UI/MainUI", nil, true)
+
 end

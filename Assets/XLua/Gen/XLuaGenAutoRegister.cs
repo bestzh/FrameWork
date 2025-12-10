@@ -22,7 +22,43 @@ namespace XLua.CSObjectWrap
         static void wrapInit0(LuaEnv luaenv, ObjectTranslator translator)
         {
         
+            translator.DelayWrapLoader(typeof(EventManager), EventManagerWrap.__Register);
+        
+        
             translator.DelayWrapLoader(typeof(LuaHelper), LuaHelperWrap.__Register);
+        
+        
+            translator.DelayWrapLoader(typeof(BattleManager), BattleManagerWrap.__Register);
+        
+        
+            translator.DelayWrapLoader(typeof(ComboManager), ComboManagerWrap.__Register);
+        
+        
+            translator.DelayWrapLoader(typeof(EnemyController), EnemyControllerWrap.__Register);
+        
+        
+            translator.DelayWrapLoader(typeof(SkillSystem), SkillSystemWrap.__Register);
+        
+        
+            translator.DelayWrapLoader(typeof(CharacterManager), CharacterManagerWrap.__Register);
+        
+        
+            translator.DelayWrapLoader(typeof(InventoryManager), InventoryManagerWrap.__Register);
+        
+        
+            translator.DelayWrapLoader(typeof(PlayerAnimationController), PlayerAnimationControllerWrap.__Register);
+        
+        
+            translator.DelayWrapLoader(typeof(PlayerController), PlayerControllerWrap.__Register);
+        
+        
+            translator.DelayWrapLoader(typeof(QuestManager), QuestManagerWrap.__Register);
+        
+        
+            translator.DelayWrapLoader(typeof(NPCController), NPCControllerWrap.__Register);
+        
+        
+            translator.DelayWrapLoader(typeof(PortalController), PortalControllerWrap.__Register);
         
         
             translator.DelayWrapLoader(typeof(Tutorial.BaseClass), TutorialBaseClassWrap.__Register);

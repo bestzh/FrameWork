@@ -5,11 +5,19 @@ using XLua;
 /// <summary>
 /// NPC控制器 - 管理NPC的交互功能
 /// 支持对话、显示交互提示等功能
+/// 支持从表格配置读取数据
 /// </summary>
 [XLua.LuaCallCSharp]
 public class NPCController : MonoBehaviour
 {
-    [Header("NPC信息")]
+    [Header("配置方式")]
+    [Tooltip("配置ID（0表示使用Inspector中的值，>0表示从表格读取）")]
+    public uint configID = 0;
+    
+    [Tooltip("是否使用表格中的位置（如果为true，会覆盖当前GameObject的位置）")]
+    public bool useTablePosition = true;
+    
+    [Header("NPC信息（如果configID为0则使用这些值）")]
     [Tooltip("NPC名称")]
     public string npcName = "测试NPC";
     
@@ -38,6 +46,9 @@ public class NPCController : MonoBehaviour
     
     void Start()
     {
+        // 从表格加载配置（如果configID有效）
+        LoadConfigFromTable();
+        
         // 查找玩家对象
         player = GameObject.FindGameObjectWithTag("Player");
         if (player == null)
@@ -56,6 +67,62 @@ public class NPCController : MonoBehaviour
         else
         {
             interactionHint.SetActive(false);
+        }
+    }
+    
+    /// <summary>
+    /// 从表格加载配置
+    /// </summary>
+    void LoadConfigFromTable()
+    {
+        if (configID == 0) return; // 使用Inspector中的值
+        
+        // 确保表格已加载
+        if (Table.TableManager.Instance != null)
+        {
+            Table.TableManager.Instance.Load();
+        }
+        
+        // 尝试从表格读取配置
+        try
+        {
+            if (Table.NPCConfig.Contains(configID))
+            {
+                var config = Table.NPCConfig.Get(configID);
+                npcName = config.Name;
+                dialogueText = config.DialogueText;
+                interactionDistance = float.Parse(config.InteractionDistance);
+                
+                // 解析交互按键字符串
+                if (!string.IsNullOrEmpty(config.InteractionKey))
+                {
+                    if (System.Enum.TryParse<KeyCode>(config.InteractionKey, out KeyCode key))
+                    {
+                        interactionKey = key;
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[NPCController] 无效的交互按键: {config.InteractionKey}，使用默认值E");
+                    }
+                }
+                
+                // 设置位置（如果启用）
+                if (useTablePosition)
+                {
+                    transform.position = new Vector3(float.Parse(config.PositionX), float.Parse(config.PositionY), float.Parse(config.PositionZ));
+                    transform.rotation = Quaternion.Euler(0, float.Parse(config.RotationY), 0);
+                }
+                
+                Debug.Log($"[NPCController] 已从表格加载配置 ID={configID}, Name={npcName}, Position=({config.PositionX}, {config.PositionY}, {config.PositionZ})");
+            }
+            else
+            {
+                Debug.LogWarning($"[NPCController] 表格中未找到配置ID={configID}，使用Inspector中的值");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[NPCController] 加载表格配置失败: {e.Message}，使用Inspector中的值");
         }
     }
     

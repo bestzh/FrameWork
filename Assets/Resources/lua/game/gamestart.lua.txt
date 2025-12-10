@@ -1,0 +1,50 @@
+---@diagnostic disable: undefined-global
+---@diagnostic disable: unused-local
+---@diagnostic disable: unused-function
+-- 游戏开始事件处理
+-- 当C#触发GAME_START事件时，此脚本中的回调函数会被调用
+
+local EventHelper = require("event_helper")
+
+local function LoadNPC()
+    local npcConfig = CS.Table.NPCConfig.datas;
+    local parentObj = CS.UnityEngine.GameObject.Find("NPC_Test")
+    local npcPrefab = ResHelper.LoadGameObject("Prefabs/NPC_Model")
+    for k, v in pairs(npcConfig) do
+        local npc = ResHelper.Instantiate(npcPrefab, parentObj.transform)
+        npc.name = v.Name
+        npc.transform.localPosition = CS.UnityEngine.Vector3(tonumber(v.PositionX), tonumber(v.PositionY), tonumber(v.PositionZ))
+        npc.transform.localRotation = CS.UnityEngine.Quaternion.Euler(0, tonumber(v.RotationY), 0)
+        local npcController = npc:GetComponent(typeof(CS.NPCController))
+        npcController.configID = v.ID
+        npcController.npcName = v.Name
+        npcController.dialogueText = v.DialogueText
+        npcController.interactionDistance = tonumber(v.InteractionDistance)
+        npcController.interactionKey = v.InteractionKey
+        npcController.useTablePosition = true
+    end
+end
+
+-- 游戏开始事件回调函数
+-- 此函数会被事件系统动态调用，不会被标记为未使用
+local function OnGameStart()
+    print("[Lua] ========== 游戏开始！ ==========")
+    print("[Lua] 当前时间: " .. os.date("%Y-%m-%d %H:%M:%S"))
+    local playerPrefab = ResHelper.LoadGameObject("Prefabs/Player/Player")
+    local parentObj = CS.UnityEngine.GameObject.Find("Player")
+    local player = ResHelper.Instantiate(playerPrefab, parentObj.transform)
+    player.transform.localPosition = CS.UnityEngine.Vector3(0, 0, 0)
+    local cinemachineCameraObj = CS.UnityEngine.GameObject.Find("CinemachineCamera")
+    local virtualCamera = cinemachineCameraObj:GetComponent(typeof(CS.Unity.Cinemachine.CinemachineCamera))
+    virtualCamera.Follow = player.transform
+    virtualCamera.LookAt = player.transform
+    print("[Lua] ✓ Cinemachine相机已绑定到Player (Follow和LookAt)")
+    LoadNPC()
+end
+-- LoadNPC函数会被OnGameStart调用
+
+
+EventHelper.Register(EventHelper.Events.GAME_START, OnGameStart)
+
+print("[Lua] gamestart.lua 已加载，游戏开始事件监听器已注册")
+
