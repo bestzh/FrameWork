@@ -4,19 +4,16 @@ using XLua;
 
 /// <summary>
 /// 传送门控制器 - 管理传送门的交互和场景切换功能
-/// 支持从表格配置读取数据
+/// 数据通过Lua脚本的InitializeFromLua方法初始化
 /// </summary>
 [XLua.LuaCallCSharp]
 public class PortalController : MonoBehaviour
 {
     [Header("配置方式")]
-    [Tooltip("配置ID（0表示使用Inspector中的值，>0表示从表格读取）")]
+    [Tooltip("配置ID（用于标识，数据通过Lua的InitializeFromLua方法传入）")]
     public uint configID = 0;
     
-    [Tooltip("是否使用表格中的位置（如果为true，会覆盖当前GameObject的位置）")]
-    public bool useTablePosition = true;
-    
-    [Header("传送门信息（如果configID为0则使用这些值）")]
+    [Header("传送门信息（Inspector中的值，Lua初始化时会覆盖）")]
     [Tooltip("传送门名称")]
     public string portalName = "传送门";
     
@@ -31,7 +28,7 @@ public class PortalController : MonoBehaviour
     [Tooltip("交互距离")]
     public float interactionDistance = 3f;
     
-    [Tooltip("交互提示UI（可选，会自动创建）")]
+    [Tooltip("交互提示UI（在Inspector中指定，通常是Portal预制体的子对象）")]
     public GameObject interactionHint;
     
     [Tooltip("交互按键（默认E键）")]
@@ -59,127 +56,126 @@ public class PortalController : MonoBehaviour
     
     void Start()
     {
-        // 从表格加载配置（如果configID有效）
-        LoadConfigFromTable();
-        
-        // 查找玩家对象
-        player = GameObject.FindGameObjectWithTag("Player");
-        if (player == null)
+        // 初始化交互提示UI（如果Inspector中已指定）
+        if (interactionHint != null)
         {
-            Debug.LogWarning($"[PortalController] 未找到Player对象（Tag: Player），传送门: {portalName}");
-        }
-        
-        // 获取相机引用
-        targetCamera = GetMainCamera();
-        
-        // 创建交互提示（如果还没有）
-        if (interactionHint == null)
-        {
-            CreateInteractionHint();
-        }
-        else
-        {
+            UpdateHintText();
             interactionHint.SetActive(false);
         }
         
-        // 验证场景名称
-        if (string.IsNullOrEmpty(targetSceneName))
+        // 验证场景名称（仅在非Lua初始化时检查）
+        if (configID == 0 && string.IsNullOrEmpty(targetSceneName))
         {
             Debug.LogWarning($"[PortalController] 传送门 {portalName} 未设置目标场景名称！");
         }
     }
     
     /// <summary>
-    /// 从表格加载配置
+    /// 更新提示文本内容（显示交互按键）
     /// </summary>
-    void LoadConfigFromTable()
+    void UpdateHintText()
     {
-        if (configID == 0) return; // 使用Inspector中的值
+        if (interactionHint == null) return;
         
-        // 确保表格已加载
-        if (Table.TableManager.Instance != null)
+        // 查找HintText子对象
+        Transform hintTextTransform = interactionHint.transform.Find("HintText");
+        if (hintTextTransform != null)
         {
-            Table.TableManager.Instance.Load();
-        }
-        
-        // 尝试从表格读取配置
-        try
-        {
-            if (Table.PortalConfig.Contains(configID))
+            UnityEngine.UI.Text text = hintTextTransform.GetComponent<UnityEngine.UI.Text>();
+            if (text != null)
             {
-                var config = Table.PortalConfig.Get(configID);
-                portalName = config.Name;
-                targetSceneName = config.TargetSceneName;
-                portalDescription = config.Description;
-                
-                // 解析字符串类型的 float 值
-                if (!string.IsNullOrEmpty(config.InteractionDistance))
-                {
-                    if (float.TryParse(config.InteractionDistance, out float distance))
-                    {
-                        interactionDistance = distance;
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[PortalController] 无效的交互距离: {config.InteractionDistance}，使用默认值");
-                    }
-                }
-                
-                if (!string.IsNullOrEmpty(config.TeleportDelay))
-                {
-                    if (float.TryParse(config.TeleportDelay, out float delay))
-                    {
-                        teleportDelay = delay;
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[PortalController] 无效的传送延迟: {config.TeleportDelay}，使用默认值");
-                    }
-                }
-                
-                // 解析交互按键字符串
-                if (!string.IsNullOrEmpty(config.InteractionKey))
-                {
-                    if (System.Enum.TryParse<KeyCode>(config.InteractionKey, out KeyCode key))
-                    {
-                        interactionKey = key;
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[PortalController] 无效的交互按键: {config.InteractionKey}，使用默认值E");
-                    }
-                }
-                
-                // 设置位置（如果启用）
-                if (useTablePosition)
-                {
-                    float posX = 0f, posY = 0f, posZ = 0f, rotY = 0f;
-                    
-                    if (!string.IsNullOrEmpty(config.PositionX))
-                        float.TryParse(config.PositionX, out posX);
-                    if (!string.IsNullOrEmpty(config.PositionY))
-                        float.TryParse(config.PositionY, out posY);
-                    if (!string.IsNullOrEmpty(config.PositionZ))
-                        float.TryParse(config.PositionZ, out posZ);
-                    if (!string.IsNullOrEmpty(config.RotationY))
-                        float.TryParse(config.RotationY, out rotY);
-                    
-                    transform.position = new Vector3(posX, posY, posZ);
-                    transform.rotation = Quaternion.Euler(0, rotY, 0);
-                }
-                
-                Debug.Log($"[PortalController] 已从表格加载配置 ID={configID}, Name={portalName}, TargetScene={targetSceneName}, Position=({config.PositionX}, {config.PositionY}, {config.PositionZ})");
+                text.text = $"按 {interactionKey} 进入 {portalName}";
             }
-            else
-            {
-                Debug.LogWarning($"[PortalController] 表格中未找到配置ID={configID}，使用Inspector中的值");
-            }
-        }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"[PortalController] 加载表格配置失败: {e.Message}，使用Inspector中的值");
         }
     }
+    
+    /// <summary>
+    /// 延迟初始化玩家对象（在需要时调用）
+    /// </summary>
+    void EnsurePlayerInitialized()
+    {
+        if (player == null)
+        {
+            player = GameObject.FindGameObjectWithTag("Player");
+            if (player == null)
+            {
+                // 不输出警告，因为玩家可能在稍后才创建
+                return;
+            }
+            Debug.Log($"[PortalController] 已找到玩家对象，传送门: {portalName}");
+        }
+    }
+    
+    /// <summary>
+    /// 延迟初始化相机（在需要时调用）
+    /// </summary>
+    void EnsureCameraInitialized()
+    {
+        if (targetCamera == null)
+        {
+            targetCamera = GetMainCamera();
+        }
+    }
+    
+    /// <summary>
+    /// 解析交互按键字符串
+    /// </summary>
+    void ParseInteractionKey(string keyStr)
+    {
+        if (string.IsNullOrEmpty(keyStr)) return;
+        
+        if (System.Enum.TryParse<KeyCode>(keyStr, out KeyCode keyCode))
+        {
+            interactionKey = keyCode;
+        }
+        else
+        {
+            Debug.LogWarning($"[PortalController] 无效的交互按键: {keyStr}，使用默认值E");
+            interactionKey = KeyCode.E;
+        }
+    }
+    
+    /// <summary>
+    /// 从Lua初始化传送门配置（供Lua脚本调用）
+    /// 核心逻辑：C#负责所有配置的应用和验证
+    /// </summary>
+    /// <param name="id">配置ID</param>
+    /// <param name="name">传送门名称</param>
+    /// <param name="targetScene">目标场景名称</param>
+    /// <param name="description">传送门描述</param>
+    /// <param name="distance">交互距离</param>
+    /// <param name="delay">传送延迟</param>
+    /// <param name="key">交互按键字符串</param>
+    /// <param name="posX">X坐标</param>
+    /// <param name="posY">Y坐标</param>
+    /// <param name="posZ">Z坐标</param>
+    /// <param name="rotY">Y轴旋转角度</param>
+    public void InitializeFromLua(uint id, string name, string targetScene, string description, float distance, float delay, string key, float posX, float posY, float posZ, float rotY)
+    {
+        // 核心逻辑：C#负责所有配置的应用和验证
+        configID = id;
+        
+        // 应用配置
+        portalName = name;
+        targetSceneName = targetScene;
+        portalDescription = description;
+        interactionDistance = distance;
+        teleportDelay = delay;
+        ParseInteractionKey(key);
+        
+        // 设置位置和旋转（核心逻辑在C#）
+        transform.localPosition = new Vector3(posX, posY, posZ);
+        transform.localRotation = Quaternion.Euler(0, rotY, 0);
+        
+        // 更新提示文本（如果UI已存在）
+        if (interactionHint != null)
+        {
+            UpdateHintText();
+        }
+        
+        Debug.Log($"[PortalController] 已从Lua初始化配置 ID={id}, Name={name}, TargetScene={targetScene}, Position=({posX}, {posY}, {posZ}), RotationY={rotY}");
+    }
+    
     
     /// <summary>
     /// 获取主相机（支持Cinemachine）
@@ -214,16 +210,21 @@ public class PortalController : MonoBehaviour
     
     void Update()
     {
+        // 延迟初始化玩家和相机
+        EnsurePlayerInitialized();
+        EnsureCameraInitialized();
+        
         if (player == null || isTeleporting) return;
         
         // 计算玩家距离
         float distance = Vector3.Distance(transform.position, player.transform.position);
+        bool wasNearby = isPlayerNearby;
         isPlayerNearby = distance <= interactionDistance;
         
-        // 显示/隐藏交互提示
-        if (interactionHint != null)
+        // 只在状态改变时更新UI（性能优化）
+        if (wasNearby != isPlayerNearby && interactionHint != null)
         {
-            interactionHint.SetActive(isPlayerNearby);
+            interactionHint.SetActive(isPlayerNearby && !isTeleporting);
         }
         
         // 检测交互输入
@@ -233,61 +234,12 @@ public class PortalController : MonoBehaviour
         }
         
         // 更新提示位置（跟随传送门）
-        if (interactionHint != null && isPlayerNearby)
+        if (interactionHint != null && isPlayerNearby && interactionHint.activeSelf)
         {
             UpdateHintPosition();
         }
     }
     
-    /// <summary>
-    /// 创建交互提示UI
-    /// </summary>
-    void CreateInteractionHint()
-    {
-        // 创建一个简单的Canvas作为提示
-        GameObject canvasObj = new GameObject("InteractionHint");
-        canvasObj.transform.SetParent(transform);
-        canvasObj.transform.localPosition = Vector3.zero;
-        
-        Canvas canvas = canvasObj.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.WorldSpace;
-        canvas.worldCamera = targetCamera != null ? targetCamera : Camera.main;
-        
-        CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        
-        // 创建文本
-        GameObject textObj = new GameObject("HintText");
-        textObj.transform.SetParent(canvasObj.transform);
-        textObj.transform.localPosition = new Vector3(0, 2.5f, 0);
-        textObj.transform.localScale = Vector3.one * 0.01f;
-        
-        UnityEngine.UI.Text text = textObj.AddComponent<UnityEngine.UI.Text>();
-        text.text = $"按 {interactionKey} 进入 {portalName}";
-        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        text.fontSize = 30;
-        text.color = Color.cyan;
-        text.alignment = TextAnchor.MiddleCenter;
-        
-        // 添加背景
-        GameObject bgObj = new GameObject("Background");
-        bgObj.transform.SetParent(textObj.transform);
-        bgObj.transform.localPosition = Vector3.zero;
-        bgObj.transform.localScale = Vector3.one;
-        
-        UnityEngine.UI.Image bg = bgObj.AddComponent<UnityEngine.UI.Image>();
-        bg.color = new Color(0, 0.5f, 0.5f, 0.7f);
-        
-        RectTransform bgRect = bgObj.GetComponent<RectTransform>();
-        RectTransform textRect = textObj.GetComponent<RectTransform>();
-        bgRect.anchorMin = Vector2.zero;
-        bgRect.anchorMax = Vector2.one;
-        bgRect.sizeDelta = new Vector2(20, 20);
-        
-        interactionHint = canvasObj;
-        interactionHint.SetActive(false);
-    }
     
     /// <summary>
     /// 更新提示位置（始终面向相机）

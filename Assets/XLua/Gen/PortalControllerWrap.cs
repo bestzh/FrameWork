@@ -21,8 +21,9 @@ namespace XLua.CSObjectWrap
         {
 			ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
 			System.Type type = typeof(PortalController);
-			Utils.BeginObjectRegister(type, L, translator, 0, 4, 12, 12);
+			Utils.BeginObjectRegister(type, L, translator, 0, 5, 11, 11);
 			
+			Utils.RegisterFunc(L, Utils.METHOD_IDX, "InitializeFromLua", _m_InitializeFromLua);
 			Utils.RegisterFunc(L, Utils.METHOD_IDX, "Teleport", _m_Teleport);
 			Utils.RegisterFunc(L, Utils.METHOD_IDX, "IsPlayerInRange", _m_IsPlayerInRange);
 			Utils.RegisterFunc(L, Utils.METHOD_IDX, "GetPlayerDistance", _m_GetPlayerDistance);
@@ -30,7 +31,6 @@ namespace XLua.CSObjectWrap
 			
 			
 			Utils.RegisterFunc(L, Utils.GETTER_IDX, "configID", _g_get_configID);
-            Utils.RegisterFunc(L, Utils.GETTER_IDX, "useTablePosition", _g_get_useTablePosition);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "portalName", _g_get_portalName);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "targetSceneName", _g_get_targetSceneName);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "portalDescription", _g_get_portalDescription);
@@ -43,7 +43,6 @@ namespace XLua.CSObjectWrap
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "portalEffect", _g_get_portalEffect);
             
 			Utils.RegisterFunc(L, Utils.SETTER_IDX, "configID", _s_set_configID);
-            Utils.RegisterFunc(L, Utils.SETTER_IDX, "useTablePosition", _s_set_useTablePosition);
             Utils.RegisterFunc(L, Utils.SETTER_IDX, "portalName", _s_set_portalName);
             Utils.RegisterFunc(L, Utils.SETTER_IDX, "targetSceneName", _s_set_targetSceneName);
             Utils.RegisterFunc(L, Utils.SETTER_IDX, "portalDescription", _s_set_portalDescription);
@@ -98,6 +97,44 @@ namespace XLua.CSObjectWrap
         
         
         
+        
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int _m_InitializeFromLua(RealStatePtr L)
+        {
+		    try {
+            
+                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
+            
+            
+                PortalController gen_to_be_invoked = (PortalController)translator.FastGetCSObj(L, 1);
+            
+            
+                
+                {
+                    uint _id = LuaAPI.xlua_touint(L, 2);
+                    string _name = LuaAPI.lua_tostring(L, 3);
+                    string _targetScene = LuaAPI.lua_tostring(L, 4);
+                    string _description = LuaAPI.lua_tostring(L, 5);
+                    float _distance = (float)LuaAPI.lua_tonumber(L, 6);
+                    float _delay = (float)LuaAPI.lua_tonumber(L, 7);
+                    string _key = LuaAPI.lua_tostring(L, 8);
+                    float _posX = (float)LuaAPI.lua_tonumber(L, 9);
+                    float _posY = (float)LuaAPI.lua_tonumber(L, 10);
+                    float _posZ = (float)LuaAPI.lua_tonumber(L, 11);
+                    float _rotY = (float)LuaAPI.lua_tonumber(L, 12);
+                    
+                    gen_to_be_invoked.InitializeFromLua( _id, _name, _targetScene, _description, _distance, _delay, _key, _posX, _posY, _posZ, _rotY );
+                    
+                    
+                    
+                    return 0;
+                }
+                
+            } catch(System.Exception gen_e) {
+                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
+            }
+            
+        }
         
         [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
         static int _m_Teleport(RealStatePtr L)
@@ -221,20 +258,6 @@ namespace XLua.CSObjectWrap
 			
                 PortalController gen_to_be_invoked = (PortalController)translator.FastGetCSObj(L, 1);
                 LuaAPI.xlua_pushuint(L, gen_to_be_invoked.configID);
-            } catch(System.Exception gen_e) {
-                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
-            }
-            return 1;
-        }
-        
-        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
-        static int _g_get_useTablePosition(RealStatePtr L)
-        {
-		    try {
-                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
-			
-                PortalController gen_to_be_invoked = (PortalController)translator.FastGetCSObj(L, 1);
-                LuaAPI.lua_pushboolean(L, gen_to_be_invoked.useTablePosition);
             } catch(System.Exception gen_e) {
                 return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
             }
@@ -391,21 +414,6 @@ namespace XLua.CSObjectWrap
 			
                 PortalController gen_to_be_invoked = (PortalController)translator.FastGetCSObj(L, 1);
                 gen_to_be_invoked.configID = LuaAPI.xlua_touint(L, 2);
-            
-            } catch(System.Exception gen_e) {
-                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
-            }
-            return 0;
-        }
-        
-        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
-        static int _s_set_useTablePosition(RealStatePtr L)
-        {
-		    try {
-                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
-			
-                PortalController gen_to_be_invoked = (PortalController)translator.FastGetCSObj(L, 1);
-                gen_to_be_invoked.useTablePosition = LuaAPI.lua_toboolean(L, 2);
             
             } catch(System.Exception gen_e) {
                 return LuaAPI.luaL_error(L, "c# exception:" + gen_e);

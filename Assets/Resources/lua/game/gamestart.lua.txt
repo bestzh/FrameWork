@@ -18,24 +18,16 @@ local function LoadPlayer()
 end 
 
 local function LoadNPC()
-    -- C#+Lua混合架构：核心逻辑在C#，业务逻辑在Lua
-    -- C#负责：距离检测、输入检测、UI创建（性能敏感）
-    -- Lua负责：数据传递、对话内容、交互流程（需要热更新）
     local npcConfig = Table.NPCConfig.datas;
     local parentObj = UnityEngine.GameObject.Find("NPC_Test")
-    local npcPrefab = ResHelper.LoadGameObject("Prefabs/NPC_Model")
-    
+    local npcPrefab = ResHelper.LoadGameObject("Prefabs/NPC_Model")  
     for k, v in pairs(npcConfig) do
         local npc = ResHelper.Instantiate(npcPrefab, parentObj.transform)
         npc.name = v.Name
-        
-        -- 获取或添加NPCController组件（C#核心逻辑）
         local npcController = npc:GetComponent(typeof(CS.NPCController))
         if npcController == nil then
             npcController = npc:AddComponent(typeof(CS.NPCController))
         end
-        
-        -- 从Lua传递配置数据给C#，由C#负责所有核心逻辑
         npcController:InitializeFromLua(
             v.ID,
             v.Name,
@@ -54,8 +46,25 @@ local function LoadPortal()
     local parentObj = UnityEngine.GameObject.Find("Portal_Test")
     local PortalPrefab = ResHelper.LoadGameObject("Prefabs/Portal_Model");
     for k, v in pairs(PortalTable) do
-        local Portal = ResHelper.Instantiate(PortalPrefab, parentObj)
+        local Portal = ResHelper.Instantiate(PortalPrefab, parentObj.transform)
         Portal.name = v.Name
+        local portalController = Portal:GetComponent(typeof(CS.PortalController))
+        if portalController == nil then
+            portalController = Portal:AddComponent(typeof(CS.PortalController))
+        end
+        portalController:InitializeFromLua(
+            v.ID,
+            v.Name,
+            v.TargetSceneName,
+            v.Description,
+            tonumber(v.InteractionDistance),
+            tonumber(v.TeleportDelay),
+            v.InteractionKey,
+            tonumber(v.PositionX),
+            tonumber(v.PositionY),
+            tonumber(v.PositionZ),
+            tonumber(v.RotationY)
+        )
     end
 end
 
@@ -66,7 +75,7 @@ local function OnGameStart()
     print("[Lua] 当前时间: " .. os.date("%Y-%m-%d %H:%M:%S"))
     LoadPlayer()
     LoadNPC()
-    -- LoadPortal()
+    LoadPortal()
 end
 -- LoadNPC函数会被OnGameStart调用
 
