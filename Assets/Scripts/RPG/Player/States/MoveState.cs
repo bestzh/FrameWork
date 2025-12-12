@@ -21,11 +21,18 @@ public class MoveState : PlayerState
             return;
         }
         
-        // 更新动画
+        // 更新动画（使用平滑过渡）
         if (player.animator != null)
         {
-            player.animator.SetFloat("Horizontal", player.InputDir.x);
-            player.animator.SetFloat("Vertical", player.InputDir.y);
+            float dampTime = player.animationDampTime;
+            
+            // 使用平滑过渡设置动画参数
+            player.animator.SetFloat("Horizontal", player.SmoothedInputDir.x, dampTime, Time.deltaTime);
+            player.animator.SetFloat("Vertical", player.SmoothedInputDir.y, dampTime, Time.deltaTime);
+            
+            // 设置速度参数（用于控制动画播放速度）
+            float speed = player.InputDir.magnitude;
+            player.animator.SetFloat("Speed", speed, dampTime, Time.deltaTime);
         }
     }
     

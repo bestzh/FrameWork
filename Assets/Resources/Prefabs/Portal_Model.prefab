@@ -280,7 +280,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   configID: 0
-  useTablePosition: 0
   portalName: "\u4F20\u9001\u95E8"
   targetSceneName: Town
   portalDescription: "\u4F20\u9001\u5230\u53E6\u4E00\u4E2A\u573A\u666F"
@@ -290,7 +289,7 @@ MonoBehaviour:
   teleportDelay: 0.5
   showLoadingHint: 1
   showGizmos: 1
-  portalEffect: {fileID: 0}
+  portalEffect: {fileID: 3992058561654064293, guid: 13c990b8270c70b4c9f196019286028c, type: 3}
 --- !u!1 &8985315093439002528
 GameObject:
   m_ObjectHideFlags: 0

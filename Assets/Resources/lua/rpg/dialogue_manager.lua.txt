@@ -1,0 +1,100 @@
+---@diagnostic disable: undefined-global
+---@diagnostic disable: unused-local
+-- 对话管理器 - Lua实现
+-- 统一管理NPC对话UI的显示和隐藏
+
+local DialogueManager = {}
+
+-- 对话UI设置
+local dialogueUIPath = "UI/DialogueUI"
+local currentDialogueUI = nil
+local isDialogueActive = false
+
+-- 显示对话
+-- npcName: NPC名称
+-- dialogue: 对话内容
+-- avatarPath: NPC头像路径（可选）
+-- onClosed: 对话关闭回调（可选）
+function DialogueManager.ShowDialogue(npcName, dialogue, avatarPath, onClosed)
+    -- 如果已有对话在显示，先关闭
+    if isDialogueActive and currentDialogueUI then
+        DialogueManager.CloseDialogue()
+    end
+    
+    -- 获取DialogueUI模块（先加载模块）
+    local dialogueUIModule = require("ui.dialogue_ui")
+    if not dialogueUIModule then
+        print("[DialogueManager] 错误: 无法加载dialogue_ui模块")
+        -- 后备方案：使用Debug输出
+        print("=== " .. (npcName or "") .. " ===")
+        print(dialogue or "")
+        if onClosed then
+            onClosed()
+        end
+        return
+    end
+    
+    -- 加载对话UI（如果还未加载）
+    if not currentDialogueUI then
+        -- 使用Lua驱动的UI加载，自动加载对应的Lua脚本
+        currentDialogueUI = UIHelper.LoadLuaUI("DialogueUI", dialogueUIPath, nil, false)
+        
+        if not currentDialogueUI then
+            print("[DialogueManager] 错误: 无法加载对话UI，路径: " .. dialogueUIPath)
+            print("请确保：")
+            print("1. UI预制体存在于 Resources/" .. dialogueUIPath .. ".prefab")
+            print("2. 预制体上有LuaUIBase组件")
+            print("3. 预制体路径正确")
+            -- 后备方案：使用Debug输出
+            print("=== " .. (npcName or "") .. " ===")
+            print(dialogue or "")
+            if onClosed then
+                onClosed()
+            end
+            return
+        end
+    end
+    
+    -- 显示对话（通过模块函数）
+    dialogueUIModule.ShowDialogue(npcName, dialogue, avatarPath, function()
+        isDialogueActive = false
+        if onClosed then
+            onClosed()
+        end
+    end)
+    
+    -- 显示UI
+    UIHelper.ShowLuaUI("DialogueUI")
+    isDialogueActive = true
+end
+
+-- 关闭对话
+function DialogueManager.CloseDialogue()
+    if currentDialogueUI and isDialogueActive then
+        local dialogueUIModule = require("ui.dialogue_ui")
+        if dialogueUIModule then
+            dialogueUIModule.CloseDialogue()
+        else
+            UIHelper.HideLuaUI("DialogueUI")
+        end
+        isDialogueActive = false
+    end
+end
+
+-- 检查是否有对话正在显示
+function DialogueManager.IsDialogueActive()
+    return isDialogueActive
+end
+
+-- 设置对话UI路径（运行时修改）
+function DialogueManager.SetDialogueUIPath(path)
+    dialogueUIPath = path or "UI/DialogueUI"
+end
+
+-- 初始化（可选，如果需要的话）
+function DialogueManager.Initialize()
+    print("[DialogueManager] 对话管理器已初始化")
+end
+
+return DialogueManager
+

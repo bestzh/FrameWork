@@ -1,5 +1,5 @@
 ID	Name	TargetSceneName	Description	InteractionDistance	TeleportDelay	InteractionKey	PositionX	PositionY	PositionZ	RotationY
 UINT32	STRING	STRING	STRING	STRING	STRING	STRING	STRING	STRING	STRING	STRING
-1	城镇传送门	MainTown	传送到城镇中心	3	0.5	E	0	0	0	0
-2	副本入口	Dungeon01	进入副本	2.5	0.3	E	0	0	0	0
-3	返回传送门	MainTown	返回城镇	3	0.5	E	0	0	0	0
+1	城镇传送门	Town	传送到城镇中心	3	0.5	E	0	0	0	0
+2	副本入口	Town	进入副本	2.5	0.3	E	45	-6	-60	0
+3	返回传送门	Town	返回城镇	3	0.5	E	0	0	0	0

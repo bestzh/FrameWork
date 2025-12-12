@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using XLua;
+using System;
 
 /// <summary>
 /// NPC控制器 - 管理NPC的交互功能
@@ -252,11 +253,10 @@ public class NPCController : MonoBehaviour
             EventManager.Instance.TriggerEvent("NPC_Interact", this);
         }
         
-        // 显示对话（简单版：使用Debug.Log，后续可以集成UI系统）
+        // 显示对话（使用对话UI系统）
         ShowDialogue();
         
-        // 重置交互状态（可以改为等待对话关闭）
-        Invoke(nameof(ResetInteraction), 0.5f);
+        // 注意：交互状态重置现在在对话关闭回调中处理
     }
     
     /// <summary>
@@ -264,10 +264,48 @@ public class NPCController : MonoBehaviour
     /// </summary>
     void ShowDialogue()
     {
-        // TODO: 集成UI系统显示对话界面
-        // 目前使用简单的Debug输出
+        // 直接调用Lua的对话管理器
+        try
+        {
+            var luaManager = LuaManager.Instance;
+            if (luaManager != null && luaManager.LuaEnv != null)
+            {
+                // 加载Lua模块
+                var dialogueManager = luaManager.Require("rpg.dialogue_manager");
+                if (dialogueManager != null)
+                {
+                    var showDialogueFunc = dialogueManager.Get<XLua.LuaFunction>("ShowDialogue");
+                    if (showDialogueFunc != null)
+                    {
+                        // 调用Lua函数
+                        showDialogueFunc.Call(
+                            npcName,
+                            dialogueText,
+                            null, // 头像路径（可选）
+                            (System.Action)(() =>
+                            {
+                                // 对话关闭后的回调
+                                ResetInteraction();
+                            })
+                        );
+                        showDialogueFunc.Dispose();
+                        return;
+                    }
+                    dialogueManager.Dispose();
+                }
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[NPCController] 调用Lua对话管理器失败: {e.Message}");
+        }
+        
+        // 后备方案：使用Debug输出
+        Debug.LogWarning($"[NPCController] 无法调用Lua对话管理器，使用Debug输出");
         Debug.Log($"=== {npcName} ===");
         Debug.Log(dialogueText);
+        // 延迟重置交互状态
+        Invoke(nameof(ResetInteraction), 0.5f);
     }
     
     /// <summary>

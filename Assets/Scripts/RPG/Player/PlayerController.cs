@@ -14,6 +14,11 @@ public class PlayerController : MonoBehaviour
     /// 移动输入（从InputManager获取）
     /// </summary>
     public Vector2 InputDir { get; private set; }
+    
+    /// <summary>
+    /// 平滑后的输入方向（用于动画）
+    /// </summary>
+    public Vector2 SmoothedInputDir => smoothedInputDir;
 
     public Animator animator;
     public bool IsRunning => InputDir.magnitude > 0.5f;
@@ -21,6 +26,15 @@ public class PlayerController : MonoBehaviour
     [Header("移动设置")]
     public float MoveSpeed = 5f;
     public bool IsGrounded => Physics.Raycast(transform.position, Vector3.down, 1.1f);
+    
+    [Header("动画平滑设置")]
+    [Tooltip("动画参数平滑过渡时间（秒）")]
+    public float animationDampTime = 0.1f;
+    [Tooltip("输入平滑速度")]
+    public float inputSmoothSpeed = 10f;
+    
+    // 平滑后的输入值
+    private Vector2 smoothedInputDir = Vector2.zero;
 
     [Header("生命值设置")]
     public int MaxHealth = 100;
@@ -101,6 +115,9 @@ public class PlayerController : MonoBehaviour
         // 更新输入
         UpdateInput();
         
+        // 平滑输入值
+        smoothedInputDir = Vector2.Lerp(smoothedInputDir, InputDir, Time.deltaTime * inputSmoothSpeed);
+        
         // 更新状态机
         StateMachine.Update();
 
@@ -152,9 +169,21 @@ public class PlayerController : MonoBehaviour
     /// </summary>
     private void UpdateInput()
     {
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-        InputDir = new Vector2(h, v).normalized;
+        // 使用 GetAxis 而不是 GetAxisRaw 以获得平滑输入
+        float h = Input.GetAxis("Horizontal");
+        float v = Input.GetAxis("Vertical");
+        InputDir = new Vector2(h, v);
+        
+        // 如果输入很小，直接设为0，避免微小抖动
+        if (InputDir.magnitude < 0.1f)
+        {
+            InputDir = Vector2.zero;
+        }
+        else
+        {
+            // 归一化输入方向
+            InputDir = InputDir.normalized;
+        }
     }
     
     public void SetIsJumping(bool jumping)

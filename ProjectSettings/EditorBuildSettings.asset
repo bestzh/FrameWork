@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SceneOne.unity
     guid: 59a8432ec7a5b0e479086774bd38221d
+  - enabled: 1
+    path: Assets/Scenes/Town.unity
+    guid: 0c51476e5b4e4324f8142161b25880a1
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: 591fadf15e8eda64e931f081b7950e13, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
