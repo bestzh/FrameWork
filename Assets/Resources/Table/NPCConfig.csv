@@ -1,6 +1,6 @@
 ID	Name	DialogueText	InteractionDistance	InteractionKey	PositionX	PositionY	PositionZ	RotationY
 UINT32	STRING	STRING	STRING	STRING	STRING	STRING	STRING	STRING
 1	测试NPC	你好，冒险者！欢迎来到城镇。	2.00	E	0.00	0.00	0.00	0.00
-2	商店NPC	欢迎光临！需要什么装备吗？	2.50	E	0.00	0.00	0.00	0.00
-3	任务NPC	我这里有任务要交给你。	2.00	E	0.00	0.00	0.00	0.00
-4	训练师NPC	想要提升技能吗？	2.00	E	0.00	0.00	0.00	0.00
+2	商店NPC	欢迎光临！需要什么装备吗？	2.50	E	-7.00	0.00	-5.00	0.00
+3	任务NPC	我这里有任务要交给你。	2.00	E	0.00	0.00	-10.00	0.00
+4	训练师NPC	想要提升技能吗？	2.00	E	9.00	0.00	-5.00	0.00
