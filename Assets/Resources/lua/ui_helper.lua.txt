@@ -3,6 +3,25 @@
 
 local UIHelper = {}
 
+-- 辅助函数：包装OnInitialize回调，自动设置MainCanvas为父对象
+local function WrapOnInitialize(originalOnInitialize, uiName)
+    return function(ui)
+        -- 确保UI被设置为MainCanvas的子对象
+        local uiManager = CS.UI.UIManager.Instance
+        if uiManager and uiManager.MainCanvas then
+            local mainCanvas = uiManager.MainCanvas
+            if ui.transform.parent ~= mainCanvas.transform then
+                ui.transform:SetParent(mainCanvas.transform, false)
+                print("[UIHelper] UI已自动设置为MainCanvas的子对象: " .. (uiName or "Unknown"))
+            end
+        end
+        -- 调用原始的OnInitialize（如果存在）
+        if originalOnInitialize then
+            originalOnInitialize(ui)
+        end
+    end
+end
+
 -- 加载Lua驱动的UI（推荐，支持热更新）
 -- uiName: UI名称（用于缓存）
 -- uiPath: UI预制体路径
@@ -22,9 +41,10 @@ function UIHelper.LoadLuaUI(uiName, uiPath, callbacks, showImmediately)
         if success and uiModule then
             -- 如果模块存在，使用模块中的回调函数
             callbacks = {}
-            if uiModule.OnInitialize then
-                callbacks.OnInitialize = uiModule.OnInitialize
-            end
+            
+            -- 包装OnInitialize，自动设置MainCanvas为父对象
+            callbacks.OnInitialize = WrapOnInitialize(uiModule.OnInitialize, uiName)
+            
             if uiModule.OnShow then
                 callbacks.OnShow = uiModule.OnShow
             end
@@ -55,9 +75,11 @@ function UIHelper.LoadLuaUI(uiName, uiPath, callbacks, showImmediately)
             -- 如果模块有Start函数，也调用它（传递UI实例）
             if uiModule.Start then
                 -- Start函数会在UI初始化后调用
+                local originalOnInitialize = callbacks.OnInitialize
                 callbacks.OnInitialize = function(ui)
-                    if uiModule.OnInitialize then
-                        uiModule.OnInitialize(ui)
+                    -- 先调用包装的OnInitialize（设置MainCanvas）
+                    if originalOnInitialize then
+                        originalOnInitialize(ui)
                     end
                     -- 调用Start函数
                     uiModule.Start(ui)
@@ -65,6 +87,19 @@ function UIHelper.LoadLuaUI(uiName, uiPath, callbacks, showImmediately)
             end
         else
             print("[UIHelper] 警告: 未找到UI对应的Lua脚本 ui." .. uiName .. "，将使用空回调")
+            -- 即使没有找到模块，也要确保设置MainCanvas
+            callbacks = {}
+            callbacks.OnInitialize = WrapOnInitialize(nil, uiName)
+        end
+    else
+        -- 如果用户直接提供了callbacks，也要包装OnInitialize
+        if callbacks then
+            local originalOnInitialize = callbacks.OnInitialize
+            callbacks.OnInitialize = WrapOnInitialize(originalOnInitialize, uiName)
+        else
+            -- 如果callbacks为nil，创建一个空的callbacks表并设置OnInitialize
+            callbacks = {}
+            callbacks.OnInitialize = WrapOnInitialize(nil, uiName)
         end
     end
     

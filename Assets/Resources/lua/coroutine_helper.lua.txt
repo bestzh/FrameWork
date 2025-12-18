@@ -24,8 +24,8 @@ function CoroutineHelper.Start(coroutineFunc)
     -- 使用XLua的cs_generator创建协程生成器
     local generator = util.cs_generator(coroutineFunc)
     
-    -- 启动协程
-    local coroutine = CS.LuaHelper.StartCoroutine(function()
+    -- 启动协程（使用不返回IEnumerator的方法，避免XLua配置问题）
+    local coroutine = CS.LuaHelper.StartCoroutineWithoutReturn(function()
         return generator
     end)
     
@@ -48,7 +48,8 @@ function CoroutineHelper.Stop(coroutineId)
     
     local coroutine = activeCoroutines[coroutineId]
     if coroutine ~= nil then
-        CS.LuaHelper.StopCoroutine(coroutine)
+        -- 使用StopCoroutineObject避免IEnumerator类型问题
+        CS.LuaHelper.StopCoroutineObject(coroutine)
         activeCoroutines[coroutineId] = nil
     end
 end
@@ -56,7 +57,7 @@ end
 -- 停止所有协程
 function CoroutineHelper.StopAll()
     for id, coroutine in pairs(activeCoroutines) do
-        CS.LuaHelper.StopCoroutine(coroutine)
+        CS.LuaHelper.StopCoroutineObject(coroutine)
     end
     activeCoroutines = {}
 end

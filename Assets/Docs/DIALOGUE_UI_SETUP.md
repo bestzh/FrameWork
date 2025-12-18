@@ -36,6 +36,11 @@ DialogueUI (Canvas)
 │   ├── NPCNameText (TextMeshProUGUI) - 显示NPC名称
 │   ├── DialogueText (TextMeshProUGUI) - 显示对话内容
 │   ├── NPCAvatar (Image) - NPC头像（可选）
+│   ├── OptionsContainer (GameObject) - 选项容器（VerticalLayoutGroup）
+│   │   ├── OptionButton1 (Button) - 选项按钮1（可选，作为模板）
+│   │   │   └── Text (TextMeshProUGUI) - 选项文本
+│   │   └── OptionButton2 (Button) - 选项按钮2（可选，作为模板）
+│   │       └── Text (TextMeshProUGUI) - 选项文本
 │   └── CloseButton (Button) - 关闭按钮
 ```
 
@@ -68,6 +73,24 @@ DialogueUI (Canvas)
 - **大小**: 100x100
 - **用途**: 显示NPC头像（如果不需要可以隐藏）
 
+#### OptionsContainer (GameObject)
+- **位置**: DialogueText下方
+- **组件**: 添加 `Vertical Layout Group` 组件（Unity UI）
+- **用途**: 容纳对话选项按钮
+- **设置**:
+  - Spacing: 10（选项间距）
+  - Child Alignment: Upper Center
+  - Child Force Expand: Width = true, Height = false
+- **注意**: 如果UI中没有预设选项按钮，脚本会自动创建（需要至少有一个子对象作为模板）
+
+#### OptionButton (Button) - 选项按钮模板（可选）
+- **位置**: OptionsContainer内
+- **大小**: Width: 700, Height: 50
+- **组件**: Button + TextMeshProUGUI子对象
+- **文本**: "选项文本"
+- **用途**: 作为选项按钮的模板（如果使用动态创建）
+- **注意**: 可以创建多个模板按钮，脚本会自动使用或复制
+
 #### CloseButton (Button)
 - **位置**: Panel右上角
 - **大小**: 40x40
@@ -90,6 +113,7 @@ DialogueUI (Canvas)
   - `DialoguePanel/NPCNameText` 或 `DialoguePanel/NPCName`
   - `DialoguePanel/DialogueText` 或 `DialoguePanel/Content`
   - `DialoguePanel/NPCAvatar` 或 `DialoguePanel/Avatar`
+  - `DialoguePanel/OptionsContainer` 或 `DialoguePanel/OptionsPanel`（用于显示选项）
   - `DialoguePanel/CloseButton` 或 `DialoguePanel/CloseBtn`
 
 ### 步骤5：保存预制体
@@ -167,6 +191,8 @@ if (dialogueManager != null)
 
 ### 手动调用（Lua）
 
+#### 基本对话（无选项）
+
 ```lua
 -- 加载对话管理器模块
 local DialogueManager = require("rpg.dialogue_manager")
@@ -176,6 +202,8 @@ DialogueManager.ShowDialogue(
     "NPC名称",
     "对话内容",
     "UI/Avatar/NPC1",  -- 头像路径（可选）
+    nil,  -- 选项列表（可选）
+    nil,  -- 选项选择回调（可选）
     function()
         print("对话关闭")
     end  -- 关闭回调（可选）
@@ -183,6 +211,55 @@ DialogueManager.ShowDialogue(
 
 -- 关闭对话
 DialogueManager.CloseDialogue()
+```
+
+#### 带选项的对话
+
+```lua
+-- 加载对话管理器模块
+local DialogueManager = require("rpg.dialogue_manager")
+
+-- 定义对话选项
+local options = {
+    {
+        text = "打开商店",
+        action = "open_shop",
+        nextDialogueId = 1  -- 可选：下一个对话ID
+    },
+    {
+        text = "查看任务",
+        action = "open_quest",
+        nextDialogueId = 2
+    },
+    {
+        text = "再见",
+        action = "close"
+    }
+}
+
+-- 显示带选项的对话
+DialogueManager.ShowDialogue(
+    "铁匠·史密斯",
+    "欢迎来到我的商店！你想要什么？",
+    "UI/Avatar/Blacksmith",
+    options,  -- 选项列表
+    function(option, index)  -- 选项选择回调
+        print("选择了选项: " .. option.text)
+        if option.action == "open_shop" then
+            -- 打开商店
+            print("打开商店")
+        elseif option.action == "open_quest" then
+            -- 打开任务界面
+            print("打开任务界面")
+        elseif option.action == "close" then
+            -- 关闭对话
+            DialogueManager.CloseDialogue()
+        end
+    end,
+    function()
+        print("对话关闭")
+    end
+)
 ```
 
 ### 快捷键
@@ -306,24 +383,115 @@ end
 - **底部居中**: 不遮挡游戏画面
 - **大小**: 宽度800-1000，高度200-300
 
+## 📝 添加选项按钮到UI预制体
+
+### 方法1：使用预设按钮（推荐）
+
+1. **创建选项容器**
+   - 在 `DialoguePanel` 下创建空GameObject，命名为 `OptionsContainer`
+   - 添加 `Vertical Layout Group` 组件
+   - 设置：
+     - Spacing: 10
+     - Child Alignment: Upper Center
+     - Child Force Expand: Width = true, Height = false
+     - Padding: Left/Right = 20, Top/Bottom = 10
+
+2. **创建选项按钮模板**
+   - 在 `OptionsContainer` 下创建 Button，命名为 `OptionButton1`
+   - 设置按钮大小：Width = 700, Height = 50
+   - 在按钮下创建 TextMeshPro - Text 子对象，命名为 `Text`
+   - 设置文本：字体大小 18，颜色白色，居中对齐
+   - **重要**：默认隐藏这个按钮（SetActive(false)），它只作为模板
+
+3. **可选**：创建更多模板按钮（OptionButton2, OptionButton3等）
+   - 脚本会自动使用或复制这些按钮
+
+### 方法2：动态创建（如果UI中没有预设按钮）
+
+如果 `OptionsContainer` 中没有任何子对象，脚本会尝试创建按钮，但需要确保：
+- `OptionsContainer` 存在
+- `OptionsContainer` 有 `Vertical Layout Group` 组件
+
+**注意**：推荐使用方法1，因为可以更好地控制按钮样式。
+
 ## ✅ 完成检查清单
 
 - [ ] 对话UI预制体已创建
 - [ ] 预制体路径为 `Resources/UI/DialogueUI.prefab`
-- [ ] DialogueUI组件已添加并配置
+- [ ] LuaUIBase组件已添加并配置
 - [ ] 所有UI组件引用已设置
+- [ ] OptionsContainer已创建并配置
+- [ ] 选项按钮模板已创建（至少一个）
 - [ ] 测试NPC交互，对话UI正常显示
+- [ ] 测试带选项的对话
 - [ ] 测试关闭按钮和快捷键
 - [ ] 测试打字机效果（如果启用）
 
+## 🎯 对话选项系统
+
+对话选项系统已经集成！现在NPC可以显示多个选项供玩家选择。
+
+### 选项数据结构
+
+每个选项是一个表（table），包含以下字段：
+
+```lua
+{
+    text = "选项文本",           -- 必填：显示的文本
+    action = "open_shop",       -- 可选：动作类型（自定义字符串）
+    nextDialogueId = 1,         -- 可选：下一个对话ID
+    data = {}                   -- 可选：自定义数据
+}
+```
+
+### 选项动作类型
+
+你可以定义任何动作类型，常见的有：
+- `"open_shop"` - 打开商店
+- `"open_quest"` - 打开任务界面
+- `"accept_quest"` - 接取任务
+- `"complete_quest"` - 完成任务
+- `"close"` - 关闭对话
+- 自定义动作...
+
+### 使用示例
+
+```lua
+-- 示例：商店NPC对话
+local shopOptions = {
+    {text = "我想买东西", action = "open_shop"},
+    {text = "我想卖东西", action = "open_sell"},
+    {text = "再见", action = "close"}
+}
+
+DialogueManager.ShowDialogue(
+    "铁匠·史密斯",
+    "欢迎！需要什么帮助吗？",
+    nil,
+    shopOptions,
+    function(option, index)
+        if option.action == "open_shop" then
+            -- 打开商店UI
+            print("打开商店")
+        elseif option.action == "open_sell" then
+            -- 打开出售界面
+            print("打开出售界面")
+        elseif option.action == "close" then
+            DialogueManager.CloseDialogue()
+        end
+    end
+)
+```
+
 ## 🚀 下一步
 
-完成对话UI设置后，你可以：
+完成对话UI和选项系统后，你可以：
 
-1. **添加对话选项系统** - 让玩家可以选择不同的对话选项
-2. **添加任务系统** - NPC可以给玩家任务
+1. ✅ **对话选项系统** - 已完成！现在可以显示选项了
+2. **集成任务系统** - 让NPC可以通过对话选项给玩家任务
 3. **添加商店系统** - NPC可以打开商店界面
-4. **美化UI** - 添加动画、特效等
+4. **对话分支系统** - 实现多段对话，根据选项跳转到不同对话
+5. **美化UI** - 添加动画、特效等
 
 ---
 

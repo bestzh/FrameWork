@@ -1608,6 +1608,29 @@ public static class LuaHelper
     }
     
     /// <summary>
+    /// 启动协程（不返回IEnumerator，避免XLua配置问题）
+    /// 直接启动协程并返回object类型的句柄
+    /// </summary>
+    /// <param name="coroutineFunc">协程函数（返回IEnumerator的函数）</param>
+    /// <returns>协程句柄对象（用于停止）</returns>
+    [XLua.LuaCallCSharp]
+    public static object StartCoroutineWithoutReturn(System.Func<System.Collections.IEnumerator> coroutineFunc)
+    {
+        var luaManager = LuaManager.Instance;
+        if (luaManager != null && coroutineFunc != null)
+        {
+            var coroutine = coroutineFunc();
+            var mb = luaManager as MonoBehaviour;
+            if (mb != null)
+            {
+                mb.StartCoroutine(coroutine);
+                return coroutine;
+            }
+        }
+        return null;
+    }
+    
+    /// <summary>
     /// 停止协程
     /// </summary>
     /// <param name="coroutine">协程对象</param>
@@ -1617,6 +1640,19 @@ public static class LuaHelper
         if (luaManager != null && coroutine != null)
         {
             (luaManager as MonoBehaviour).StopCoroutine(coroutine);
+        }
+    }
+    
+    /// <summary>
+    /// 停止协程（使用object类型，避免IEnumerator类型问题）
+    /// </summary>
+    /// <param name="coroutine">协程对象</param>
+    [XLua.LuaCallCSharp]
+    public static void StopCoroutineObject(object coroutine)
+    {
+        if (coroutine is System.Collections.IEnumerator enumerator)
+        {
+            StopCoroutine(enumerator);
         }
     }
     

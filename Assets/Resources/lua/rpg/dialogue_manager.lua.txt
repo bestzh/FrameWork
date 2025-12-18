@@ -14,17 +14,19 @@ local isDialogueActive = false
 -- npcName: NPC名称
 -- dialogue: 对话内容
 -- avatarPath: NPC头像路径（可选）
+-- options: 对话选项列表（可选）格式: {{text="选项1", action="open_shop", nextDialogueId=1}, {text="选项2", action="close"}}
+-- onOptionSelected: 选项选择回调（可选）function(option, index)
 -- onClosed: 对话关闭回调（可选）
-function DialogueManager.ShowDialogue(npcName, dialogue, avatarPath, onClosed)
+function DialogueManager.ShowDialogue(npcName, dialogue, avatarPath, options, onOptionSelected, onClosed)
     -- 如果已有对话在显示，先关闭
     if isDialogueActive and currentDialogueUI then
         DialogueManager.CloseDialogue()
     end
     
     -- 获取DialogueUI模块（先加载模块）
-    local dialogueUIModule = require("ui.dialogue_ui")
+    local dialogueUIModule = require("ui.DialogueUI")
     if not dialogueUIModule then
-        print("[DialogueManager] 错误: 无法加载dialogue_ui模块")
+        print("[DialogueManager] 错误: 无法加载DialogueUI模块")
         -- 后备方案：使用Debug输出
         print("=== " .. (npcName or "") .. " ===")
         print(dialogue or "")
@@ -56,22 +58,40 @@ function DialogueManager.ShowDialogue(npcName, dialogue, avatarPath, onClosed)
     end
     
     -- 显示对话（通过模块函数）
-    dialogueUIModule.ShowDialogue(npcName, dialogue, avatarPath, function()
-        isDialogueActive = false
-        if onClosed then
-            onClosed()
+    dialogueUIModule.ShowDialogue(
+        npcName, 
+        dialogue, 
+        avatarPath, 
+        options or {},  -- 传递选项列表
+        onOptionSelected,  -- 传递选项选择回调
+        function()
+            isDialogueActive = false
+            if onClosed then
+                onClosed()
+            end
         end
-    end)
+    )
     
-    -- 显示UI
-    UIHelper.ShowLuaUI("DialogueUI")
+    -- 显示UI（直接使用已加载的UI对象）
+    if currentDialogueUI then
+        local luaUI = currentDialogueUI:GetComponent("LuaUIBase")
+        if luaUI then
+            luaUI:Show()
+        else
+            -- 如果找不到组件，使用ShowLuaUI作为后备方案
+            UIHelper.ShowLuaUI("DialogueUI")
+        end
+    else
+        -- 如果UI对象不存在，使用ShowLuaUI作为后备方案
+        UIHelper.ShowLuaUI("DialogueUI")
+    end
     isDialogueActive = true
 end
 
 -- 关闭对话
 function DialogueManager.CloseDialogue()
     if currentDialogueUI and isDialogueActive then
-        local dialogueUIModule = require("ui.dialogue_ui")
+        local dialogueUIModule = require("ui.DialogueUI")
         if dialogueUIModule then
             dialogueUIModule.CloseDialogue()
         else

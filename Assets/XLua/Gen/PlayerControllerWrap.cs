@@ -21,7 +21,7 @@ namespace XLua.CSObjectWrap
         {
 			ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
 			System.Type type = typeof(PlayerController);
-			Utils.BeginObjectRegister(type, L, translator, 0, 4, 16, 7);
+			Utils.BeginObjectRegister(type, L, translator, 0, 4, 19, 9);
 			
 			Utils.RegisterFunc(L, Utils.METHOD_IDX, "SetIsJumping", _m_SetIsJumping);
 			Utils.RegisterFunc(L, Utils.METHOD_IDX, "SetIsRolling", _m_SetIsRolling);
@@ -31,6 +31,7 @@ namespace XLua.CSObjectWrap
 			
 			Utils.RegisterFunc(L, Utils.GETTER_IDX, "StateMachine", _g_get_StateMachine);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "InputDir", _g_get_InputDir);
+            Utils.RegisterFunc(L, Utils.GETTER_IDX, "SmoothedInputDir", _g_get_SmoothedInputDir);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "IsRunning", _g_get_IsRunning);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "IsGrounded", _g_get_IsGrounded);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "CurrentHealth", _g_get_CurrentHealth);
@@ -41,6 +42,8 @@ namespace XLua.CSObjectWrap
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "CharacterData", _g_get_CharacterData);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "animator", _g_get_animator);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "MoveSpeed", _g_get_MoveSpeed);
+            Utils.RegisterFunc(L, Utils.GETTER_IDX, "animationDampTime", _g_get_animationDampTime);
+            Utils.RegisterFunc(L, Utils.GETTER_IDX, "inputSmoothSpeed", _g_get_inputSmoothSpeed);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "MaxHealth", _g_get_MaxHealth);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "rb", _g_get_rb);
             Utils.RegisterFunc(L, Utils.GETTER_IDX, "mouseSensitivity", _g_get_mouseSensitivity);
@@ -49,6 +52,8 @@ namespace XLua.CSObjectWrap
 			Utils.RegisterFunc(L, Utils.SETTER_IDX, "CharacterData", _s_set_CharacterData);
             Utils.RegisterFunc(L, Utils.SETTER_IDX, "animator", _s_set_animator);
             Utils.RegisterFunc(L, Utils.SETTER_IDX, "MoveSpeed", _s_set_MoveSpeed);
+            Utils.RegisterFunc(L, Utils.SETTER_IDX, "animationDampTime", _s_set_animationDampTime);
+            Utils.RegisterFunc(L, Utils.SETTER_IDX, "inputSmoothSpeed", _s_set_inputSmoothSpeed);
             Utils.RegisterFunc(L, Utils.SETTER_IDX, "MaxHealth", _s_set_MaxHealth);
             Utils.RegisterFunc(L, Utils.SETTER_IDX, "rb", _s_set_rb);
             Utils.RegisterFunc(L, Utils.SETTER_IDX, "mouseSensitivity", _s_set_mouseSensitivity);
@@ -242,6 +247,20 @@ namespace XLua.CSObjectWrap
         }
         
         [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int _g_get_SmoothedInputDir(RealStatePtr L)
+        {
+		    try {
+                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
+			
+                PlayerController gen_to_be_invoked = (PlayerController)translator.FastGetCSObj(L, 1);
+                translator.PushUnityEngineVector2(L, gen_to_be_invoked.SmoothedInputDir);
+            } catch(System.Exception gen_e) {
+                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
+            }
+            return 1;
+        }
+        
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
         static int _g_get_IsRunning(RealStatePtr L)
         {
 		    try {
@@ -382,6 +401,34 @@ namespace XLua.CSObjectWrap
         }
         
         [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int _g_get_animationDampTime(RealStatePtr L)
+        {
+		    try {
+                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
+			
+                PlayerController gen_to_be_invoked = (PlayerController)translator.FastGetCSObj(L, 1);
+                LuaAPI.lua_pushnumber(L, gen_to_be_invoked.animationDampTime);
+            } catch(System.Exception gen_e) {
+                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
+            }
+            return 1;
+        }
+        
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int _g_get_inputSmoothSpeed(RealStatePtr L)
+        {
+		    try {
+                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
+			
+                PlayerController gen_to_be_invoked = (PlayerController)translator.FastGetCSObj(L, 1);
+                LuaAPI.lua_pushnumber(L, gen_to_be_invoked.inputSmoothSpeed);
+            } catch(System.Exception gen_e) {
+                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
+            }
+            return 1;
+        }
+        
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
         static int _g_get_MaxHealth(RealStatePtr L)
         {
 		    try {
@@ -477,6 +524,36 @@ namespace XLua.CSObjectWrap
 			
                 PlayerController gen_to_be_invoked = (PlayerController)translator.FastGetCSObj(L, 1);
                 gen_to_be_invoked.MoveSpeed = (float)LuaAPI.lua_tonumber(L, 2);
+            
+            } catch(System.Exception gen_e) {
+                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
+            }
+            return 0;
+        }
+        
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int _s_set_animationDampTime(RealStatePtr L)
+        {
+		    try {
+                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
+			
+                PlayerController gen_to_be_invoked = (PlayerController)translator.FastGetCSObj(L, 1);
+                gen_to_be_invoked.animationDampTime = (float)LuaAPI.lua_tonumber(L, 2);
+            
+            } catch(System.Exception gen_e) {
+                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
+            }
+            return 0;
+        }
+        
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int _s_set_inputSmoothSpeed(RealStatePtr L)
+        {
+		    try {
+                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
+			
+                PlayerController gen_to_be_invoked = (PlayerController)translator.FastGetCSObj(L, 1);
+                gen_to_be_invoked.inputSmoothSpeed = (float)LuaAPI.lua_tonumber(L, 2);
             
             } catch(System.Exception gen_e) {
                 return LuaAPI.luaL_error(L, "c# exception:" + gen_e);

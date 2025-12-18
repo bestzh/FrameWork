@@ -1,0 +1,533 @@
+---@diagnostic disable: undefined-global
+---@diagnostic disable: unused-local
+-- 对话UI - Lua实现
+-- 支持热更新，所有UI逻辑都在Lua中
+
+local CoroutineHelper = require("coroutine_helper")
+
+local DialogueUI = {}
+
+-- UI组件引用
+local currentUI = nil
+local npcNameText = nil
+local dialogueText = nil
+local npcAvatarImage = nil
+local closeButton = nil
+local optionsContainer = nil  -- 选项容器（VerticalLayoutGroup或GridLayoutGroup）
+
+-- 设置
+local typingSpeed = 0.05  -- 打字机效果速度
+local useTypingEffect = true  -- 是否使用打字机效果
+
+-- 状态
+local currentDialogue = ""
+local typingCoroutine = nil
+local onDialogueClosed = nil
+local onOptionSelected = nil  -- 选项选择回调
+local isTyping = false
+local currentOptions = {}  -- 当前对话选项列表
+local optionButtons = {}  -- 选项按钮列表
+local optionButtonPrefab = nil  -- 选项按钮预制体（可选，如果使用动态创建）
+
+-- 辅助函数：打印UI层级结构（用于调试）
+local function PrintUITree(transform, indent)
+    indent = indent or ""
+    if not transform then
+        return
+    end
+    
+    local name = transform.name
+    print(indent .. name)
+    
+    local childCount = transform.childCount
+    for i = 0, childCount - 1 do
+        local child = transform:GetChild(i)
+        if child then
+            PrintUITree(child, indent .. "  ")
+        end
+    end
+end
+
+-- 初始化UI组件引用
+local function InitializeComponents(ui)
+
+    local npcNameObj = ui.transform:Find("NPCNameText")
+    if npcNameObj then
+        npcNameText = npcNameObj:GetComponent("TextMeshProUGUI")
+    end
+
+    local dialogueObj = ui.transform:Find("DialogueText")
+    if dialogueObj then
+        dialogueText = dialogueObj:GetComponent("TextMeshProUGUI")
+    end
+
+    local avatarObj = ui.transform:Find("NPCAvatar")
+    if avatarObj then
+        npcAvatarImage = avatarObj:GetComponent("Image")
+    end
+
+    local closeBtnObj = ui.transform:Find("CloseButton")
+    if closeBtnObj then
+        closeButton = closeBtnObj:GetComponent("Button")
+    end
+
+    -- 查找选项容器（支持多种命名方式）
+    local optionsContainerObj = ui.transform:Find("OptionsContainer") or 
+                                 ui.transform:Find("DialoguePanel/OptionsContainer") or
+                                 ui.transform:Find("OptionsPanel")
+    if optionsContainerObj then
+        optionsContainer = optionsContainerObj.gameObject
+    end
+
+end
+
+-- UTF-8 安全的字符串截取函数（按字符而不是按字节）
+local function utf8Sub(str, start, finish)
+    -- 如果 Lua 版本支持 utf8 库，使用它
+    if utf8 and utf8.codes then
+        local chars = {}
+        for _, char in utf8.codes(str) do
+            table.insert(chars, utf8.char(char))
+        end
+        local subChars = {}
+        local endIndex = finish or #chars
+        for i = start, math.min(endIndex, #chars) do
+            if chars[i] then
+                table.insert(subChars, chars[i])
+            end
+        end
+        return table.concat(subChars)
+    else
+        -- 降级方案：逐字符处理（更安全但较慢）
+        -- 使用 pattern 匹配来找到每个 UTF-8 字符
+        local chars = {}
+        for char in string.gmatch(str, "([%z\1-\127\194-\244][\128-\191]*)") do
+            table.insert(chars, char)
+        end
+        local subChars = {}
+        local endIndex = finish or #chars
+        for i = start, math.min(endIndex, #chars) do
+            if chars[i] then
+                table.insert(subChars, chars[i])
+            end
+        end
+        return table.concat(subChars)
+    end
+end
+
+-- 获取 UTF-8 字符串的字符数量
+local function utf8Len(str)
+    if utf8 and utf8.codes then
+        local count = 0
+        for _ in utf8.codes(str) do
+            count = count + 1
+        end
+        return count
+    else
+        -- 使用 pattern 匹配来统计字符数
+        local count = 0
+        for _ in string.gmatch(str, "([%z\1-\127\194-\244][\128-\191]*)") do
+            count = count + 1
+        end
+        return count
+    end
+end
+
+-- 打字机效果（使用DelayCall实现，避免协程配置问题）
+local function TypeText(text)
+    if not dialogueText then
+        return
+    end
+    
+    -- 停止之前的打字机效果（如果存在）
+    if typingCoroutine then
+        typingCoroutine.isActive = false
+        typingCoroutine = nil
+    end
+    
+    isTyping = true
+    dialogueText.text = ""
+    
+    -- 获取字符数量（而不是字节数）
+    local charCount = utf8Len(text)
+    
+    -- 创建打字机状态对象
+    local typingState = {
+        index = 1,
+        textLength = charCount,
+        text = text,
+        isActive = true
+    }
+    typingCoroutine = typingState
+    
+    -- 使用DelayCall递归实现打字机效果
+    local function ShowNextChar()
+        -- 检查是否被停止
+        if not typingState.isActive or typingCoroutine ~= typingState then
+            isTyping = false
+            return
+        end
+        
+        if typingState.index > typingState.textLength then
+            -- 打字完成
+            isTyping = false
+            typingCoroutine = nil
+            -- 打字完成后显示选项（如果有）
+            if #currentOptions > 0 then
+                DialogueUI.ShowOptions()
+            end
+            return
+        end
+        
+        -- 显示当前字符（使用 UTF-8 安全的方式）
+        if dialogueText then
+            dialogueText.text = utf8Sub(typingState.text, 1, typingState.index)
+        end
+        typingState.index = typingState.index + 1
+        
+        -- 延迟显示下一个字符
+        if typingState.isActive and typingCoroutine == typingState then
+            CoroutineHelper.DelayCall(ShowNextChar, typingSpeed)
+        end
+    end
+    
+    -- 开始打字
+    ShowNextChar()
+end
+
+-- 跳过打字机效果
+function DialogueUI.SkipTyping()
+    if isTyping and dialogueText then
+        -- 停止打字机效果
+        if typingCoroutine then
+            typingCoroutine.isActive = false
+            typingCoroutine = nil
+        end
+        
+        -- 直接显示全部文本
+        dialogueText.text = currentDialogue
+        isTyping = false
+        
+        -- 打字完成后显示选项
+        if #currentOptions > 0 then
+            DialogueUI.ShowOptions()
+        end
+    end
+end
+
+-- 清除所有选项按钮
+local function ClearOptions()
+    if optionsContainer then
+        local childCount = optionsContainer.transform.childCount
+        for i = childCount - 1, 0, -1 do
+            local child = optionsContainer.transform:GetChild(i)
+            if child then
+                CS.UnityEngine.Object.Destroy(child.gameObject)
+            end
+        end
+    end
+    optionButtons = {}
+    currentOptions = {}
+end
+
+-- 显示对话选项
+function DialogueUI.ShowOptions()
+    if not optionsContainer then
+        print("[DialogueUI] 警告: 未找到选项容器，无法显示选项")
+        return
+    end
+    
+    -- 清除之前的选项
+    ClearOptions()
+    
+    if #currentOptions == 0 then
+        -- 没有选项，隐藏选项容器
+        optionsContainer:SetActive(false)
+        return
+    end
+    
+    -- 显示选项容器
+    optionsContainer:SetActive(true)
+    
+    -- 创建选项按钮
+    for i, option in ipairs(currentOptions) do
+        -- 尝试查找预设的选项按钮（如果UI中已经创建了）
+        local optionButtonObj = optionsContainer.transform:Find("OptionButton" .. i) or
+                                optionsContainer.transform:Find("Option" .. i)
+        
+        if not optionButtonObj then
+            -- 如果没有预设按钮，尝试使用第一个子对象作为模板
+            if optionsContainer.transform.childCount > 0 then
+                local template = optionsContainer.transform:GetChild(0).gameObject
+                optionButtonObj = CS.UnityEngine.Object.Instantiate(template)
+                optionButtonObj.name = "OptionButton" .. i
+                optionButtonObj.transform:SetParent(optionsContainer.transform, false)
+            else
+                -- 如果连模板都没有，创建一个简单的按钮
+                print("[DialogueUI] 警告: 无法创建选项按钮，请确保UI中有选项按钮模板或预设")
+                return
+            end
+        end
+        
+        -- 获取按钮组件
+        local button = optionButtonObj:GetComponent("Button")
+        local buttonText = optionButtonObj.transform:Find("Text"):GetComponent("TextMeshProUGUI") or
+                          optionButtonObj:GetComponentInChildren("TextMeshProUGUI")
+        
+        if button and buttonText then
+            -- 设置按钮文本
+            buttonText.text = option.text or option.optionText or ("选项" .. i)
+            
+            -- 绑定点击事件
+            local optionIndex = i
+            UIHelper.BindButtonWithSound(button, function()
+                DialogueUI.OnOptionSelected(optionIndex)
+            end)
+            
+            -- 激活按钮
+            optionButtonObj:SetActive(true)
+            table.insert(optionButtons, optionButtonObj)
+        end
+    end
+end
+
+-- 选项被选择
+function DialogueUI.OnOptionSelected(optionIndex)
+    if optionIndex < 1 or optionIndex > #currentOptions then
+        return
+    end
+    
+    local selectedOption = currentOptions[optionIndex]
+    
+    -- 调用选项选择回调
+    if onOptionSelected then
+        onOptionSelected(selectedOption, optionIndex)
+    end
+    
+    -- 清除选项显示
+    ClearOptions()
+end
+
+-- 显示对话
+-- npcName: NPC名称
+-- dialogue: 对话内容
+-- avatarPath: NPC头像路径（可选）
+-- options: 对话选项列表（可选）格式: {{text="选项1", action="open_shop"}, {text="选项2", action="close"}}
+-- onOptionSelected: 选项选择回调（可选）function(option, index)
+-- onClosed: 对话关闭回调（可选）
+function DialogueUI.ShowDialogue(npcName, dialogue, avatarPath, options, onOptionSelected, onClosed)
+    if not currentUI then
+        print("[DialogueUI] 错误: UI未初始化")
+        return
+    end
+    
+    print("[DialogueUI] ShowDialogue被调用 - NPC名称: " .. tostring(npcName) .. ", 对话: " .. tostring(dialogue))
+    
+    -- 清除之前的选项
+    ClearOptions()
+    
+    -- 设置NPC名称
+    if npcNameText then
+        -- 确保GameObject是激活的
+        if npcNameText.gameObject then
+            npcNameText.gameObject:SetActive(true)
+        end
+        npcNameText.text = npcName or ""
+        print("[DialogueUI] ✓ NPC名称已设置: " .. tostring(npcNameText.text))
+    else
+        print("[DialogueUI] ✗ 错误: npcNameText组件为空，无法设置NPC名称")
+        -- 尝试重新查找组件
+        InitializeComponents(currentUI)
+        if npcNameText then
+            npcNameText.text = npcName or ""
+            print("[DialogueUI] ✓ 重新查找后，NPC名称已设置: " .. tostring(npcNameText.text))
+        end
+    end
+    
+    -- 保存对话内容和回调
+    currentDialogue = dialogue or ""
+    onDialogueClosed = onClosed
+    onOptionSelected = onOptionSelected
+    currentOptions = options or {}
+    
+    -- 设置头像
+    if npcAvatarImage then
+        if avatarPath and avatarPath ~= "" then
+            local sprite = ResHelper.Load(avatarPath, "Sprite")
+            if sprite then
+                npcAvatarImage.sprite = sprite
+                npcAvatarImage.gameObject:SetActive(true)
+            else
+                npcAvatarImage.gameObject:SetActive(false)
+            end
+        else
+            npcAvatarImage.gameObject:SetActive(false)
+        end
+    end
+    
+    -- 显示对话文本
+    if dialogueText then
+        -- 确保GameObject是激活的
+        if dialogueText.gameObject then
+            dialogueText.gameObject:SetActive(true)
+        end
+        if useTypingEffect and currentDialogue ~= "" then
+            -- 使用打字机效果
+            if typingCoroutine then
+                CoroutineHelper.Stop(typingCoroutine)
+            end
+            print("[DialogueUI] 开始打字机效果，文本长度: " .. #currentDialogue)
+            TypeText(currentDialogue)
+            -- 打字完成后会显示选项（在TypeText完成时）
+        else
+            -- 直接显示全部文本
+            dialogueText.text = currentDialogue
+            print("[DialogueUI] ✓ 对话文本已直接设置: " .. tostring(dialogueText.text))
+            isTyping = false
+            -- 立即显示选项（如果有）
+            if #currentOptions > 0 then
+                DialogueUI.ShowOptions()
+            end
+        end
+    else
+        print("[DialogueUI] ✗ 错误: dialogueText组件为空，无法显示对话文本")
+        -- 尝试重新查找组件
+        InitializeComponents(currentUI)
+        if dialogueText then
+            if dialogueText.gameObject then
+                dialogueText.gameObject:SetActive(true)
+            end
+            dialogueText.text = currentDialogue
+            print("[DialogueUI] ✓ 重新查找后，对话文本已设置: " .. tostring(dialogueText.text))
+            -- 显示选项（如果有）
+            if #currentOptions > 0 then
+                DialogueUI.ShowOptions()
+            end
+        end
+    end
+    
+end
+
+-- 关闭对话
+function DialogueUI.CloseDialogue()
+    -- 如果正在打字，直接显示全部文本
+    if isTyping then
+        DialogueUI.SkipTyping()
+        return
+    end
+    
+    -- 清除选项
+    ClearOptions()
+    
+    -- 调用回调
+    if onDialogueClosed then
+        onDialogueClosed()
+        onDialogueClosed = nil
+    end
+    
+    -- 清除选项回调
+    onOptionSelected = nil
+    
+    -- 隐藏UI
+    if currentUI then
+        UIHelper.HideLuaUI("DialogueUI")
+    end
+end
+
+-- 检查是否可以关闭
+function DialogueUI.CanClose()
+    return not isTyping
+end
+
+-- Unity生命周期：初始化
+function DialogueUI.OnInitialize(ui)
+    print("[DialogueUI.lua] OnInitialize被调用")
+    currentUI = ui
+    
+    -- 打印UI层级结构（用于调试）
+    print("[DialogueUI] UI层级结构:")
+    PrintUITree(ui.transform)
+    
+    -- 初始化组件引用
+    InitializeComponents(ui)
+    
+    -- 绑定关闭按钮
+    if closeButton then
+        UIHelper.BindButtonWithSound(closeButton, DialogueUI.CloseDialogue)
+    end
+    
+    -- 默认隐藏面板
+    if dialoguePanel then
+        dialoguePanel.gameObject:SetActive(false)
+    end
+end
+
+-- Unity生命周期：显示
+function DialogueUI.OnShow(ui)
+
+end
+
+-- Unity生命周期：隐藏
+function DialogueUI.OnHide(ui)
+    print("[DialogueUI.lua] OnHide被调用")
+    
+    -- 停止打字机效果
+    if typingCoroutine then
+        CoroutineHelper.Stop(typingCoroutine)
+        typingCoroutine = nil
+    end
+    isTyping = false
+    
+end
+
+-- Unity生命周期：销毁
+function DialogueUI.OnDestroy(ui)
+    print("[DialogueUI.lua] OnDestroy被调用")
+    
+    -- 清理
+    if typingCoroutine then
+        CoroutineHelper.Stop(typingCoroutine)
+        typingCoroutine = nil
+    end
+    
+    ClearOptions()
+    
+    currentUI = nil
+    npcNameText = nil
+    dialogueText = nil
+    npcAvatarImage = nil
+    closeButton = nil
+    optionsContainer = nil
+    onDialogueClosed = nil
+    onOptionSelected = nil
+end
+
+-- Unity生命周期：Update（检测输入）
+function DialogueUI.Update(ui)
+    if not currentUI or not currentUI.gameObject.activeSelf then
+        return
+    end
+    
+    -- 检测ESC键关闭对话
+    if CS.UnityEngine.Input.GetKeyDown(CS.UnityEngine.KeyCode.Escape) then
+        DialogueUI.CloseDialogue()
+        return
+    end
+    
+    -- 检测鼠标左键或空格键（仅在无选项时关闭）
+    if CS.UnityEngine.Input.GetMouseButtonDown(0) or CS.UnityEngine.Input.GetKeyDown(CS.UnityEngine.KeyCode.Space) then
+        -- 如果有选项正在显示，不响应点击关闭
+        if #currentOptions > 0 and not isTyping then
+            return
+        end
+        
+        if DialogueUI.CanClose() then
+            DialogueUI.CloseDialogue()
+        else
+            DialogueUI.SkipTyping()
+        end
+    end
+end
+
+return DialogueUI
+

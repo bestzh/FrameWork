@@ -31,7 +31,7 @@ namespace XLua.CSObjectWrap
 			Utils.EndObjectRegister(type, L, translator, null, null,
 			    null, null, null);
 
-		    Utils.BeginClassRegister(type, L, __CreateInstance, 110, 0, 0);
+		    Utils.BeginClassRegister(type, L, __CreateInstance, 112, 0, 0);
 			Utils.RegisterFunc(L, Utils.CLS_IDX, "CreateLuaTable", _m_CreateLuaTable_xlua_st_);
             Utils.RegisterFunc(L, Utils.CLS_IDX, "LoadLuaUI", _m_LoadLuaUI_xlua_st_);
             Utils.RegisterFunc(L, Utils.CLS_IDX, "LoadUI", _m_LoadUI_xlua_st_);
@@ -130,7 +130,9 @@ namespace XLua.CSObjectWrap
             Utils.RegisterFunc(L, Utils.CLS_IDX, "ClearAllEvents", _m_ClearAllEvents_xlua_st_);
             Utils.RegisterFunc(L, Utils.CLS_IDX, "StartCoroutine", _m_StartCoroutine_xlua_st_);
             Utils.RegisterFunc(L, Utils.CLS_IDX, "StartCoroutineWithParam", _m_StartCoroutineWithParam_xlua_st_);
+            Utils.RegisterFunc(L, Utils.CLS_IDX, "StartCoroutineWithoutReturn", _m_StartCoroutineWithoutReturn_xlua_st_);
             Utils.RegisterFunc(L, Utils.CLS_IDX, "StopCoroutine", _m_StopCoroutine_xlua_st_);
+            Utils.RegisterFunc(L, Utils.CLS_IDX, "StopCoroutineObject", _m_StopCoroutineObject_xlua_st_);
             Utils.RegisterFunc(L, Utils.CLS_IDX, "StopAllCoroutines", _m_StopAllCoroutines_xlua_st_);
             Utils.RegisterFunc(L, Utils.CLS_IDX, "WaitForSeconds", _m_WaitForSeconds_xlua_st_);
             Utils.RegisterFunc(L, Utils.CLS_IDX, "WaitForFrames", _m_WaitForFrames_xlua_st_);
@@ -3198,6 +3200,33 @@ namespace XLua.CSObjectWrap
         }
         
         [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int _m_StartCoroutineWithoutReturn_xlua_st_(RealStatePtr L)
+        {
+		    try {
+            
+                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
+            
+            
+            
+                
+                {
+                    System.Func<System.Collections.IEnumerator> _coroutineFunc = translator.GetDelegate<System.Func<System.Collections.IEnumerator>>(L, 1);
+                    
+                        var gen_ret = LuaHelper.StartCoroutineWithoutReturn( _coroutineFunc );
+                        translator.PushAny(L, gen_ret);
+                    
+                    
+                    
+                    return 1;
+                }
+                
+            } catch(System.Exception gen_e) {
+                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
+            }
+            
+        }
+        
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
         static int _m_StopCoroutine_xlua_st_(RealStatePtr L)
         {
 		    try {
@@ -3211,6 +3240,32 @@ namespace XLua.CSObjectWrap
                     System.Collections.IEnumerator _coroutine = (System.Collections.IEnumerator)translator.GetObject(L, 1, typeof(System.Collections.IEnumerator));
                     
                     LuaHelper.StopCoroutine( _coroutine );
+                    
+                    
+                    
+                    return 0;
+                }
+                
+            } catch(System.Exception gen_e) {
+                return LuaAPI.luaL_error(L, "c# exception:" + gen_e);
+            }
+            
+        }
+        
+        [MonoPInvokeCallbackAttribute(typeof(LuaCSFunction))]
+        static int _m_StopCoroutineObject_xlua_st_(RealStatePtr L)
+        {
+		    try {
+            
+                ObjectTranslator translator = ObjectTranslatorPool.Instance.Find(L);
+            
+            
+            
+                
+                {
+                    object _coroutine = translator.GetObject(L, 1, typeof(object));
+                    
+                    LuaHelper.StopCoroutineObject( _coroutine );
                     
                     
                     
