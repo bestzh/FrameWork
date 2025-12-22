@@ -1,0 +1,226 @@
+---@diagnostic disable: undefined-global
+---@diagnostic disable: unused-local
+-- NPC对话配置表（统一配置系统）
+-- 支持单段对话和多段对话（对话树）
+-- 
+-- ========== 单段对话格式（简化配置） ==========
+-- [NPC_ID] = {
+--     npcText = "NPC说的话",     -- NPC的对话文本（必填）
+--     options = {                -- 玩家选项列表（可选，如果没有选项则显示普通对话）
+--         {text = "选项1", action = "action1"},
+--         {text = "选项2", action = "action2"},
+--         {text = "再见", action = "close"}
+--     }
+-- }
+--
+-- ========== 多段对话格式（对话树） ==========
+-- [NPC_ID] = {
+--     startNodeId = 1,           -- 起始对话节点ID（必填）
+--     nodes = {                   -- 对话节点列表（必填）
+--         [1] = {
+--             id = 1,                    -- 对话节点ID（必填）
+--             npcText = "NPC说的话",     -- NPC的对话文本（必填）
+--             options = {                -- 玩家选项列表（可选）
+--                 {
+--                     text = "选项文本",  -- 选项显示的文本（必填）
+--                     nextNodeId = 2,     -- 选择此选项后跳转到的对话节点ID（必填，0表示结束对话）
+--                     action = "custom_action"  -- 可选：自定义动作
+--                 }
+--             }
+--         },
+--         [2] = { ... }  -- 更多节点
+--     }
+-- }
+--
+-- ========== 配置说明 ==========
+-- 1. 如果配置只有 npcText 和 options（没有 startNodeId 和 nodes），则视为单段对话
+-- 2. 如果配置有 startNodeId 和 nodes，则视为多段对话（对话树）
+-- 3. 单段对话的选项 action="close" 会关闭对话
+-- 4. 多段对话的选项 nextNodeId=0 会结束对话
+
+local DialogueTreeConfig = {}
+
+-- NPC对话配置表（统一配置）
+-- 支持单段对话和多段对话
+DialogueTreeConfig.Dialogues = {
+    -- ========== 示例1：多段对话（对话树） ==========
+    [1] = {
+        startNodeId = 1,
+        nodes = {
+            [1] = {  -- 第一段：NPC打招呼
+                id = 1,
+                npcText = "你好，冒险者！欢迎来到城镇。",
+                options = {
+                    {text = "你好，很高兴见到你", nextNodeId = 2},
+                    {text = "这里是什么地方？", nextNodeId = 3},
+                    {text = "再见", nextNodeId = 0}  -- 0表示结束对话
+                }
+            },
+            [2] = {  -- 第二段：玩家选择"你好"后的回应
+                id = 2,
+                npcText = "我也很高兴见到你！如果你需要帮助，随时可以找我。",
+                options = {
+                    {text = "谢谢", nextNodeId = 0},
+                    {text = "我需要什么帮助？", nextNodeId = 4}
+                }
+            },
+            [3] = {  -- 第二段：玩家选择"这里是什么地方"后的回应
+                id = 3,
+                npcText = "这里是新手村，是冒险者们开始旅程的地方。",
+                options = {
+                    {text = "明白了，谢谢", nextNodeId = 0},
+                    {text = "有什么需要注意的吗？", nextNodeId = 5}
+                }
+            },
+            [4] = {  -- 第三段：关于帮助
+                id = 4,
+                npcText = "我可以告诉你一些关于这个世界的知识，或者指引你去商店和任务发布处。",
+                options = {
+                    {text = "好的，我记住了", nextNodeId = 0}
+                }
+            },
+            [5] = {  -- 第三段：关于注意事项
+                id = 5,
+                npcText = "记住要经常保存进度,探索时要小心怪物,遇到困难可以找其他NPC寻求帮助。",
+                options = {
+                    {text = "谢谢你的建议", nextNodeId = 0}
+                }
+            }
+        }
+    },
+    
+    -- ========== 示例2：单段对话（简化配置） ==========
+    [2] = {  -- 商店NPC - 单段对话
+        npcText = "欢迎光临！需要什么帮助吗？",
+        options = {
+            {text = "我想买东西", action = "open_shop"},
+            {text = "我想卖东西", action = "open_sell"},
+            {text = "再见", action = "close"}
+        }
+    },
+    
+    [3] = {  -- 任务NPC - 单段对话
+        npcText = "你好，冒险者！有什么需要帮助的吗？",
+        options = {
+            {text = "查看任务", action = "open_quest"},
+            {text = "接受任务", action = "accept_quest"},
+            {text = "再见", action = "close"}
+        }
+    },
+    
+    [4] = {  -- 训练师NPC - 单段对话
+        npcText = "欢迎来到训练场！",
+        options = {
+            {text = "学习技能", action = "learn_skill"},
+            {text = "升级技能", action = "upgrade_skill"},
+            {text = "再见", action = "close"}
+        }
+    },
+    
+    -- ========== 可以继续添加更多NPC的配置 ==========
+    -- 单段对话示例：
+    -- [NPC_ID] = {
+    --     npcText = "NPC说的话",
+    --     options = {
+    --         {text = "选项1", action = "action1"},
+    --         {text = "选项2", action = "action2"}
+    --     }
+    -- }
+    --
+    -- 多段对话示例：
+    -- [NPC_ID] = {
+    --     startNodeId = 1,
+    --     nodes = {
+    --         [1] = {
+    --             id = 1,
+    --             npcText = "第一段对话",
+    --             options = {
+    --                 {text = "选项1", nextNodeId = 2}
+    --             }
+    --         }
+    --     }
+    -- }
+}
+
+-- 获取NPC的对话配置
+-- @param npcID NPC的ID
+-- @return 对话配置，如果不存在则返回nil
+function DialogueTreeConfig.GetDialogue(npcID)
+    return DialogueTreeConfig.Dialogues[npcID]
+end
+
+-- 检查是否为多段对话（对话树）
+-- @param dialogue 对话配置
+-- @return 是否为多段对话
+function DialogueTreeConfig.IsTreeDialogue(dialogue)
+    return dialogue ~= nil and dialogue.startNodeId ~= nil and dialogue.nodes ~= nil
+end
+
+-- 检查是否为单段对话
+-- @param dialogue 对话配置
+-- @return 是否为单段对话
+function DialogueTreeConfig.IsSimpleDialogue(dialogue)
+    return dialogue ~= nil and dialogue.npcText ~= nil and dialogue.startNodeId == nil
+end
+
+-- 获取对话树（多段对话）
+-- @param npcID NPC的ID
+-- @return 对话树，如果不存在或不是对话树则返回nil
+function DialogueTreeConfig.GetTree(npcID)
+    local dialogue = DialogueTreeConfig.GetDialogue(npcID)
+    if DialogueTreeConfig.IsTreeDialogue(dialogue) then
+        return dialogue
+    end
+    return nil
+end
+
+-- 获取对话节点（多段对话）
+-- @param npcID NPC的ID
+-- @param nodeId 对话节点ID
+-- @return 对话节点，如果不存在则返回nil
+function DialogueTreeConfig.GetNode(npcID, nodeId)
+    local tree = DialogueTreeConfig.GetTree(npcID)
+    if tree and tree.nodes then
+        return tree.nodes[nodeId]
+    end
+    return nil
+end
+
+-- 获取起始对话节点（多段对话）
+-- @param npcID NPC的ID
+-- @return 起始对话节点，如果不存在则返回nil
+function DialogueTreeConfig.GetStartNode(npcID)
+    local tree = DialogueTreeConfig.GetTree(npcID)
+    if tree and tree.startNodeId then
+        return DialogueTreeConfig.GetNode(npcID, tree.startNodeId)
+    end
+    return nil
+end
+
+-- 获取单段对话配置
+-- @param npcID NPC的ID
+-- @return 单段对话配置，如果不存在或不是单段对话则返回nil
+function DialogueTreeConfig.GetSimpleDialogue(npcID)
+    local dialogue = DialogueTreeConfig.GetDialogue(npcID)
+    if DialogueTreeConfig.IsSimpleDialogue(dialogue) then
+        return dialogue
+    end
+    return nil
+end
+
+-- 检查NPC是否有对话配置
+-- @param npcID NPC的ID
+-- @return 是否有对话配置
+function DialogueTreeConfig.HasDialogue(npcID)
+    return DialogueTreeConfig.Dialogues[npcID] ~= nil
+end
+
+-- 检查NPC是否有对话树配置（多段对话）
+-- @param npcID NPC的ID
+-- @return 是否有对话树
+function DialogueTreeConfig.HasTree(npcID)
+    return DialogueTreeConfig.GetTree(npcID) ~= nil
+end
+
+return DialogueTreeConfig
+

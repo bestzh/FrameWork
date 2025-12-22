@@ -237,10 +237,126 @@ end
 
 -- 显示对话
 function NPCController.ShowDialogue(npc)
-    -- TODO: 集成UI系统显示对话界面
-    -- 目前使用简单的print输出
-    print("=== " .. npc.npcName .. " ===")
-    print(npc.dialogueText)
+    -- 加载对话管理器
+    local DialogueManager = require("rpg.dialogue_manager")
+    if not DialogueManager then
+        print("[NPCController] 错误: 无法加载DialogueManager模块")
+        -- 后备方案：使用print输出
+        print("=== " .. npc.npcName .. " ===")
+        print(npc.dialogueText)
+        return
+    end
+    
+    -- 加载统一的对话配置系统
+    local success, DialogueTreeConfig = pcall(require, "rpg.table.dialogue_tree_config")
+    if not success or not DialogueTreeConfig then
+        print("[NPCController] 警告: 无法加载对话配置模块，使用默认对话")
+        -- 使用NPCConfig中的默认对话文本
+        DialogueManager.ShowDialogue(
+            npc.npcName,
+            npc.dialogueText,
+            nil,
+            {},
+            nil,
+            function()
+                npc.isInteracting = false
+                if npc.onDialogueClosed then
+                    npc.onDialogueClosed()
+                end
+            end
+        )
+        return
+    end
+    
+    -- 检查是否有对话配置
+    if not DialogueTreeConfig.HasDialogue(npc.configID) then
+        print("[NPCController] NPC ID=" .. npc.configID .. " 没有对话配置，使用默认对话")
+        -- 使用NPCConfig中的默认对话文本
+        DialogueManager.ShowDialogue(
+            npc.npcName,
+            npc.dialogueText,
+            nil,
+            {},
+            nil,
+            function()
+                npc.isInteracting = false
+                if npc.onDialogueClosed then
+                    npc.onDialogueClosed()
+                end
+            end
+        )
+        return
+    end
+    
+    -- 创建对话关闭回调
+    local onClosedCallback = function()
+        npc.isInteracting = false
+        print("[NPCController] 对话已关闭")
+        
+        -- 如果C#传递了关闭回调，调用它来重置交互状态
+        if npc.onDialogueClosed then
+            npc.onDialogueClosed()
+            print("[NPCController] 已调用C#的对话关闭回调")
+        end
+    end
+    
+    -- 检查是多段对话还是单段对话
+    if DialogueTreeConfig.HasTree(npc.configID) then
+        -- 多段对话（对话树）
+        print("[NPCController] 使用对话树系统（多段对话）")
+        DialogueManager.ShowDialogueTree(
+            npc.configID,
+            npc.npcName,
+            nil,  -- 头像路径
+            onClosedCallback
+        )
+    else
+        -- 单段对话（简化配置）
+        print("[NPCController] 使用单段对话系统")
+        
+        -- 创建选项选择回调
+        local optionCallback = function(option, index)
+            print("[NPCController] NPC " .. npc.npcName .. " - 选择了选项: " .. option.text)
+            
+            -- 处理选项动作
+            if option.action == "greet" then
+                print("玩家选择了：你好")
+            elseif option.action == "learn_more" then
+                print("玩家选择了：了解更多")
+            elseif option.action == "open_shop" then
+                print("打开商店")
+                -- TODO: 打开商店UI
+            elseif option.action == "open_sell" then
+                print("打开出售界面")
+                -- TODO: 打开出售UI
+            elseif option.action == "open_quest" then
+                print("打开任务界面")
+                -- TODO: 打开任务UI
+            elseif option.action == "accept_quest" then
+                print("接受任务")
+                -- TODO: 处理任务接受逻辑
+            elseif option.action == "learn_skill" then
+                print("学习技能")
+                -- TODO: 打开技能学习UI
+            elseif option.action == "upgrade_skill" then
+                print("升级技能")
+                -- TODO: 打开技能升级UI
+            elseif option.action == "close" then
+                DialogueManager.CloseDialogue()
+            else
+                -- 其他自定义动作
+                print("执行动作: " .. tostring(option.action))
+            end
+        end
+        
+        DialogueManager.ShowSimpleDialogue(
+            npc.configID,
+            npc.npcName,
+            nil,  -- 头像路径
+            optionCallback,  -- 选项选择回调
+            onClosedCallback
+        )
+    end
 end
 
 -- 获取NPC实例

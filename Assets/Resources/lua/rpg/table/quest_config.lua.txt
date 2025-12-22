@@ -1,0 +1,427 @@
+---@diagnostic disable: undefined-global
+---@diagnostic disable: unused-local
+-- 任务配置表
+-- 统一管理游戏中的所有任务配置
+-- 
+-- ========== 任务配置格式 ==========
+-- [QUEST_ID] = {
+--     questId = 1,                    -- 任务ID（必填，必须唯一）
+--     questName = "任务名称",         -- 任务名称（必填）
+--     description = "任务描述",      -- 任务描述（必填）
+--     npcId = 1,                      -- 接取任务的NPC ID（可选，0表示无NPC限制）
+--     levelRequirement = 1,            -- 等级要求（可选，默认1）
+--     targetType = "kill_enemy",      -- 任务目标类型（必填）
+--     targetId = 1,                   -- 目标ID（必填，根据targetType不同而不同）
+--     targetCount = 5,                -- 目标数量（必填）
+--     rewardExp = 100,                -- 奖励经验（可选，默认0）
+--     rewardGold = 50,                -- 奖励金币（可选，默认0）
+--     rewardItems = {                 -- 奖励物品列表（可选）
+--         {itemId = 1, count = 1}
+--     },
+--     prerequisiteQuestId = 0,        -- 前置任务ID（可选，0表示无前置任务）
+--     repeatable = false              -- 是否可重复（可选，默认false）
+-- }
+--
+-- ========== 任务目标类型（targetType） ==========
+-- "kill_enemy"     - 击杀敌人（targetId = 敌人ID）
+-- "collect_item"   - 收集物品（targetId = 物品ID）
+-- "reach_level"    - 达到等级（targetId = 等级）
+-- "complete_dungeon" - 完成副本（targetId = 副本ID）
+-- "talk_to_npc"   - 与NPC对话（targetId = NPC ID）
+-- "custom"         - 自定义目标（需要特殊处理）
+--
+-- ========== 配置说明 ==========
+-- 1. questId 必须唯一，建议从1开始递增
+-- 2. npcId 为0表示任务可以通过其他方式接取（如自动接取）
+-- 3. prerequisiteQuestId 为0表示没有前置任务
+-- 4. repeatable 为true表示任务完成后可以再次接取
+-- 5. rewardItems 为空表表示没有物品奖励
+
+local QuestConfig = {}
+
+-- 任务配置表
+QuestConfig.Quests = {
+    -- ========== 新手任务系列（1-5级） ==========
+    [1] = {
+        questId = 1,
+        questName = "新手任务：击败5只史莱姆",
+        description = "在副本中击败5只史莱姆，这是你的第一个任务。",
+        npcId = 1,  -- 新手村NPC
+        levelRequirement = 1,  -- 1级可接取
+        targetType = "kill_enemy",
+        targetId = 1,  -- 史莱姆敌人ID
+        targetCount = 5,
+        rewardExp = 100,
+        rewardGold = 50,
+        rewardItems = {},
+        prerequisiteQuestId = 0,  -- 无前置任务
+        repeatable = false
+    },
+    
+    [2] = {
+        questId = 2,
+        questName = "收集任务：收集10个草药",
+        description = "在副本中收集10个草药，这些草药可以用来制作药水。",
+        npcId = 1,
+        levelRequirement = 2,  -- 2级可接取
+        targetType = "collect_item",
+        targetId = 1,  -- 草药物品ID
+        targetCount = 10,
+        rewardExp = 150,
+        rewardGold = 100,
+        rewardItems = {
+            {itemId = 2, count = 1}  -- 奖励1个药水
+        },
+        prerequisiteQuestId = 1,  -- 需要先完成任务1
+        repeatable = false
+    },
+    
+    [3] = {
+        questId = 3,
+        questName = "探索任务：完成暗影森林",
+        description = "完成暗影森林副本，击败最终Boss。",
+        npcId = 1,
+        levelRequirement = 3,  -- 3级可接取
+        targetType = "complete_dungeon",
+        targetId = 1,  -- 暗影森林副本ID
+        targetCount = 1,
+        rewardExp = 500,
+        rewardGold = 200,
+        rewardItems = {
+            {itemId = 3, count = 1}  -- 奖励装备
+        },
+        prerequisiteQuestId = 2,  -- 需要先完成任务2
+        repeatable = false
+    },
+    
+    -- ========== 进阶任务系列（5-10级） ==========
+    [4] = {
+        questId = 4,
+        questName = "进阶任务：击败10只哥布林",
+        description = "你的实力已经提升，现在去击败更强的敌人吧！",
+        npcId = 1,
+        levelRequirement = 5,  -- 5级可接取
+        targetType = "kill_enemy",
+        targetId = 2,  -- 哥布林敌人ID
+        targetCount = 10,
+        rewardExp = 300,
+        rewardGold = 150,
+        rewardItems = {},
+        prerequisiteQuestId = 3,  -- 需要先完成任务3
+        repeatable = false
+    },
+    
+    [5] = {
+        questId = 5,
+        questName = "进阶任务：收集20个矿石",
+        description = "收集20个矿石，这些矿石可以用来强化装备。",
+        npcId = 1,
+        levelRequirement = 6,  -- 6级可接取
+        targetType = "collect_item",
+        targetId = 3,  -- 矿石物品ID
+        targetCount = 20,
+        rewardExp = 350,
+        rewardGold = 200,
+        rewardItems = {
+            {itemId = 4, count = 2}  -- 奖励2个强化石
+        },
+        prerequisiteQuestId = 4,
+        repeatable = false
+    },
+    
+    [6] = {
+        questId = 6,
+        questName = "进阶任务：完成火焰洞穴",
+        description = "完成火焰洞穴副本，挑战更强大的Boss。",
+        npcId = 1,
+        levelRequirement = 8,  -- 8级可接取
+        targetType = "complete_dungeon",
+        targetId = 2,  -- 火焰洞穴副本ID
+        targetCount = 1,
+        rewardExp = 800,
+        rewardGold = 400,
+        rewardItems = {
+            {itemId = 5, count = 1}  -- 奖励高级装备
+        },
+        prerequisiteQuestId = 5,
+        repeatable = false
+    },
+    
+    -- ========== 高级任务系列（10-15级） ==========
+    [7] = {
+        questId = 7,
+        questName = "高级任务：击败20只骷髅",
+        description = "前往更危险的区域，击败20只骷髅战士。",
+        npcId = 1,
+        levelRequirement = 10,  -- 10级可接取
+        targetType = "kill_enemy",
+        targetId = 3,  -- 骷髅敌人ID
+        targetCount = 20,
+        rewardExp = 500,
+        rewardGold = 300,
+        rewardItems = {},
+        prerequisiteQuestId = 6,
+        repeatable = false
+    },
+    
+    [8] = {
+        questId = 8,
+        questName = "高级任务：达到15级",
+        description = "继续提升你的等级，达到15级解锁更多内容。",
+        npcId = 1,
+        levelRequirement = 10,
+        targetType = "reach_level",
+        targetId = 15,  -- 目标等级
+        targetCount = 1,
+        rewardExp = 1000,
+        rewardGold = 500,
+        rewardItems = {
+            {itemId = 6, count = 1}  -- 奖励特殊装备
+        },
+        prerequisiteQuestId = 7,
+        repeatable = false
+    },
+    
+    -- ========== 日常任务系列 ==========
+    [10] = {
+        questId = 10,
+        questName = "日常任务：击败10只哥布林",
+        description = "击败10只哥布林，获得额外奖励。",
+        npcId = 3,  -- 任务NPC
+        levelRequirement = 5,
+        targetType = "kill_enemy",
+        targetId = 2,  -- 哥布林敌人ID
+        targetCount = 10,
+        rewardExp = 200,
+        rewardGold = 150,
+        rewardItems = {},
+        prerequisiteQuestId = 0,
+        repeatable = true  -- 可重复
+    },
+    
+    [11] = {
+        questId = 11,
+        questName = "日常任务：收集20个矿石",
+        description = "收集20个矿石，用于装备强化。",
+        npcId = 3,
+        levelRequirement = 5,
+        targetType = "collect_item",
+        targetId = 3,  -- 矿石物品ID
+        targetCount = 20,
+        rewardExp = 250,
+        rewardGold = 200,
+        rewardItems = {
+            {itemId = 4, count = 2}  -- 奖励2个强化石
+        },
+        prerequisiteQuestId = 0,
+        repeatable = true
+    },
+    
+    -- ========== 进阶任务系列 ==========
+    [20] = {
+        questId = 20,
+        questName = "进阶任务：达到10级",
+        description = "提升角色等级到10级，解锁更多内容。",
+        npcId = 1,
+        levelRequirement = 1,
+        targetType = "reach_level",
+        targetId = 10,  -- 目标等级
+        targetCount = 1,
+        rewardExp = 500,
+        rewardGold = 300,
+        rewardItems = {
+            {itemId = 5, count = 1}  -- 奖励特殊装备
+        },
+        prerequisiteQuestId = 3,  -- 需要先完成任务3
+        repeatable = false
+    },
+    
+    [21] = {
+        questId = 21,
+        questName = "对话任务：与铁匠对话",
+        description = "前往装备商店，与铁匠对话了解装备系统。",
+        npcId = 2,  -- 铁匠NPC
+        levelRequirement = 1,
+        targetType = "talk_to_npc",
+        targetId = 2,  -- 铁匠NPC ID
+        targetCount = 1,
+        rewardExp = 50,
+        rewardGold = 20,
+        rewardItems = {},
+        prerequisiteQuestId = 0,
+        repeatable = false
+    },
+    
+    -- ========== 可以继续添加更多任务 ==========
+    -- [30] = { ... },
+    -- [31] = { ... },
+}
+
+-- ========== 辅助函数 ==========
+
+-- 获取任务配置
+-- @param questId 任务ID
+-- @return 任务配置，如果不存在则返回nil
+function QuestConfig.GetQuest(questId)
+    return QuestConfig.Quests[questId]
+end
+
+-- 检查任务是否存在
+-- @param questId 任务ID
+-- @return 是否存在
+function QuestConfig.HasQuest(questId)
+    return QuestConfig.Quests[questId] ~= nil
+end
+
+-- 获取NPC可以接取的任务列表
+-- @param npcId NPC ID
+-- @param playerLevel 玩家等级（可选）
+-- @param completedQuests 已完成的任务ID列表（可选）
+-- @return 任务ID列表（按等级排序）
+function QuestConfig.GetQuestsByNPC(npcId, playerLevel, completedQuests)
+    playerLevel = playerLevel or 1
+    completedQuests = completedQuests or {}
+    
+    local questList = {}
+    for questId, quest in pairs(QuestConfig.Quests) do
+        if quest.npcId == npcId or quest.npcId == 0 then
+            -- 检查是否可以接取
+            local canAccept, reason = QuestConfig.CanAcceptQuest(questId, playerLevel, completedQuests)
+            if canAccept then
+                table.insert(questList, questId)
+            end
+        end
+    end
+    
+    -- 按等级要求排序
+    table.sort(questList, function(a, b)
+        local questA = QuestConfig.GetQuest(a)
+        local questB = QuestConfig.GetQuest(b)
+        if questA and questB then
+            return questA.levelRequirement < questB.levelRequirement
+        end
+        return false
+    end)
+    
+    return questList
+end
+
+-- 获取玩家当前等级可以接取的所有任务
+-- @param playerLevel 玩家等级
+-- @param completedQuests 已完成的任务ID列表
+-- @return 任务ID列表（按等级排序）
+function QuestConfig.GetAvailableQuests(playerLevel, completedQuests)
+    playerLevel = playerLevel or 1
+    completedQuests = completedQuests or {}
+    
+    local questList = {}
+    for questId, quest in pairs(QuestConfig.Quests) do
+        local canAccept, reason = QuestConfig.CanAcceptQuest(questId, playerLevel, completedQuests)
+        if canAccept then
+            table.insert(questList, questId)
+        end
+    end
+    
+    -- 按等级要求排序
+    table.sort(questList, function(a, b)
+        local questA = QuestConfig.GetQuest(a)
+        local questB = QuestConfig.GetQuest(b)
+        if questA and questB then
+            return questA.levelRequirement < questB.levelRequirement
+        end
+        return false
+    end)
+    
+    return questList
+end
+
+-- 检查任务是否可以接取
+-- @param questId 任务ID
+-- @param playerLevel 玩家等级
+-- @param completedQuests 已完成的任务ID列表
+-- @return 是否可以接取, 原因（如果不可接取）
+function QuestConfig.CanAcceptQuest(questId, playerLevel, completedQuests)
+    local quest = QuestConfig.GetQuest(questId)
+    if not quest then
+        return false, "任务不存在"
+    end
+    
+    -- 检查等级要求
+    if playerLevel < quest.levelRequirement then
+        return false, "等级不足（需要" .. quest.levelRequirement .. "级）"
+    end
+    
+    -- 检查前置任务
+    if quest.prerequisiteQuestId > 0 then
+        local hasPrerequisite = false
+        for _, completedId in ipairs(completedQuests) do
+            if completedId == quest.prerequisiteQuestId then
+                hasPrerequisite = true
+                break
+            end
+        end
+        if not hasPrerequisite then
+            return false, "需要先完成前置任务"
+        end
+    end
+    
+    return true, "可以接取"
+end
+
+-- 获取任务目标描述文本
+-- @param quest 任务配置
+-- @return 目标描述文本
+function QuestConfig.GetTargetDescription(quest)
+    if not quest then
+        return ""
+    end
+    
+    local targetType = quest.targetType
+    local targetCount = quest.targetCount
+    local currentProgress = 0  -- 这个需要从任务进度中获取
+    
+    local descriptions = {
+        kill_enemy = "击败 " .. currentProgress .. "/" .. targetCount .. " 只敌人",
+        collect_item = "收集 " .. currentProgress .. "/" .. targetCount .. " 个物品",
+        reach_level = "达到 " .. quest.targetId .. " 级",
+        complete_dungeon = "完成副本",
+        talk_to_npc = "与NPC对话",
+        custom = "完成自定义目标"
+    }
+    
+    return descriptions[targetType] or "未知目标"
+end
+
+-- 获取任务奖励描述文本
+-- @param quest 任务配置
+-- @return 奖励描述文本
+function QuestConfig.GetRewardDescription(quest)
+    if not quest then
+        return ""
+    end
+    
+    local rewards = {}
+    
+    if quest.rewardExp > 0 then
+        table.insert(rewards, "经验 x" .. quest.rewardExp)
+    end
+    
+    if quest.rewardGold > 0 then
+        table.insert(rewards, "金币 x" .. quest.rewardGold)
+    end
+    
+    if quest.rewardItems and #quest.rewardItems > 0 then
+        for _, item in ipairs(quest.rewardItems) do
+            table.insert(rewards, "物品 x" .. item.count)
+        end
+    end
+    
+    if #rewards == 0 then
+        return "无奖励"
+    end
+    
+    return table.concat(rewards, ", ")
+end
+
+return QuestConfig
+

@@ -77,7 +77,14 @@ DialogueUI (Canvas)
 - **位置**: DialogueText下方
 - **组件**: 添加 `Vertical Layout Group` 组件（Unity UI）
 - **用途**: 容纳对话选项按钮
-- **设置**:
+- **RectTransform设置**（重要：让容器只向下增长）:
+  - **锚点（Anchor）**: 设置为顶部（Top）
+    - 在Inspector中，点击RectTransform左上角的锚点预设，选择"Top"
+    - 或者手动设置：Min Y = 1, Max Y = 1（锚点在顶部）
+  - **轴心点（Pivot）**: Y = 1（顶部）
+    - 在Inspector的RectTransform中，设置Pivot Y = 1
+    - 这样当高度增加时，容器会向下扩展而不是上下同时扩展
+- **Vertical Layout Group设置**:
   - Spacing: 10（选项间距）
   - Child Alignment: Upper Center
   - Child Force Expand: Width = true, Height = false
@@ -145,6 +152,109 @@ DialogueManager.Instance.SetDialogueUIPath("UI/你的路径");
 ### 基本使用
 
 NPC交互时会自动显示对话UI，无需额外代码。所有逻辑都在Lua脚本中实现。
+
+### 在NPCConfig表格中配置带选项的对话
+
+NPC的对话文本在 `NPCConfig.csv` 表格的 `DialogueText` 字段中配置，而对话选项需要在Lua代码中配置。
+
+#### 步骤1：在NPCConfig.csv中配置基础对话
+
+在表格中填写NPC的基本信息：
+
+```csv
+ID	Name	DialogueText	InteractionDistance	InteractionKey	PositionX	PositionY	PositionZ	RotationY
+2	商店NPC	欢迎光临！需要什么帮助吗？	2.50	E	-7.00	0.00	-5.00	0.00
+```
+
+#### 步骤2：在Lua代码中配置对话
+
+打开 `Resources/lua/rpg/table/dialogue_tree_config.lua.txt`，在 `DialogueTreeConfig.Dialogues` 配置表中添加或修改NPC的对话：
+
+**单段对话配置（简化格式）：**
+```lua
+DialogueTreeConfig.Dialogues = {
+    [2] = {  -- 商店NPC（ID=2）
+        npcText = "欢迎光临！需要什么帮助吗？",
+        options = {
+            {text = "我想买东西", action = "open_shop"},
+            {text = "我想卖东西", action = "open_sell"},
+            {text = "再见", action = "close"}
+        }
+    },
+    [3] = {  -- 任务NPC（ID=3）
+        npcText = "你好，冒险者！有什么需要帮助的吗？",
+        options = {
+            {text = "查看任务", action = "open_quest"},
+            {text = "接受任务", action = "accept_quest"},
+            {text = "再见", action = "close"}
+        }
+    }
+}
+```
+
+**配置说明：**
+- `[2]` 是NPC的ID（对应NPCConfig.csv中的ID列）
+- `npcText` 是NPC的对话文本（必填）
+- `text` 是选项显示的文本
+- `action` 是选项的动作类型（自定义字符串）
+- 如果NPC ID不在配置表中，则使用NPCConfig中的默认对话文本
+- **配置文件位置**：`Resources/lua/rpg/table/dialogue_tree_config.lua.txt`
+
+#### 步骤3：测试带选项的对话
+
+1. **确保NPC已创建并配置**
+   - 在Unity场景中创建NPC GameObject
+   - 添加 `NPCController` 组件（C#）
+   - 设置 `configID` 为表格中的NPC ID（例如：2）
+
+2. **运行游戏并测试**
+   - 控制玩家角色靠近NPC
+   - 按E键（或配置的交互键）与NPC交互
+   - 应该看到对话UI显示，底部有选项按钮
+
+3. **测试选项功能**
+   - 点击不同的选项按钮
+   - 查看Console输出，确认选项回调被正确调用
+   - 点击"再见"选项应该关闭对话
+
+#### 示例：为商店NPC添加选项
+
+假设你的NPCConfig.csv中有：
+
+```csv
+ID	Name	DialogueText	...
+2	商店NPC	欢迎光临！需要什么帮助吗？	...
+```
+
+在 `Resources/lua/rpg/table/dialogue_tree_config.lua.txt` 中添加：
+
+```lua
+DialogueTreeConfig.Dialogues = {
+    [2] = {
+        npcText = "欢迎光临！需要什么帮助吗？",
+        options = {
+            {text = "我想买东西", action = "open_shop"},
+            {text = "我想卖东西", action = "open_sell"},
+            {text = "再见", action = "close"}
+        }
+    }
+}
+```
+
+当玩家与ID=2的NPC交互时，会显示：
+- 对话文本："欢迎光临！需要什么帮助吗？"
+- 三个选项按钮：["我想买东西", "我想卖东西", "再见"]
+
+#### 无选项的普通对话
+
+如果NPC ID不在 `NPCDialogueConfig.Options` 中，则只显示对话文本，没有选项按钮。例如：
+
+```csv
+ID	Name	DialogueText	...
+1	测试NPC	你好，冒险者！欢迎来到城镇。	...
+```
+
+如果ID=1不在 `npcDialogueOptions` 中，交互时只会显示对话文本，没有选项。
 
 ### 手动调用（C#）
 
@@ -389,6 +499,11 @@ end
 
 1. **创建选项容器**
    - 在 `DialoguePanel` 下创建空GameObject，命名为 `OptionsContainer`
+   - **重要：设置RectTransform锚点和轴心点（让容器只向下增长）**
+     - 选中 `OptionsContainer`，在Inspector中找到RectTransform组件
+     - 点击左上角的锚点预设，选择"Top"（顶部锚点）
+     - 设置Pivot Y = 1（轴心点在顶部）
+     - 这样当添加选项按钮时，容器高度会向下增长，而不是上下同时增长
    - 添加 `Vertical Layout Group` 组件
    - 设置：
      - Spacing: 10
@@ -483,15 +598,203 @@ DialogueManager.ShowDialogue(
 )
 ```
 
+## 🧪 快速测试指南
+
+### 测试无选项的普通对话
+
+1. 确保NPCConfig.csv中有NPC配置（例如ID=1的测试NPC）
+2. 在Unity场景中创建NPC GameObject，添加NPCController组件，设置configID=1
+3. 运行游戏，靠近NPC，按E键交互
+4. 应该看到对话UI显示，只有对话文本，没有选项按钮
+
+### 测试带选项的对话
+
+1. **配置NPC对话**
+   - 打开 `Resources/lua/rpg/table/dialogue_tree_config.lua.txt`
+   - 在 `DialogueTreeConfig.Dialogues` 表中添加测试NPC的对话，例如：
+   ```lua
+   DialogueTreeConfig.Dialogues = {
+       [1] = {
+           npcText = "你好，冒险者！欢迎来到城镇。",
+           options = {
+               {text = "选项1", action = "test1"},
+               {text = "选项2", action = "test2"},
+               {text = "关闭", action = "close"}
+           }
+       }
+   }
+   ```
+
+2. **测试步骤**
+   - 运行游戏
+   - 靠近NPC（ID=1），按E键交互
+   - 应该看到对话UI显示，底部有3个选项按钮
+   - 点击不同选项，查看Console输出
+   - 点击"关闭"选项，对话应该关闭
+
+3. **检查清单**
+   - [ ] 对话UI正常显示
+   - [ ] NPC名称正确显示
+   - [ ] 对话文本正确显示
+   - [ ] 选项按钮正确显示（如果有配置）
+   - [ ] 点击选项有响应（查看Console）
+   - [ ] 关闭按钮可以关闭对话
+   - [ ] ESC键可以关闭对话
+   - [ ] 打字机效果正常工作（如果启用）
+
+### 常见问题排查
+
+**问题：对话UI不显示**
+- 检查预制体路径是否为 `Resources/UI/DialogueUI.prefab`
+- 检查预制体上是否有 `LuaUIBase` 组件
+- 查看Console是否有错误信息
+
+**问题：选项按钮不显示**
+- 检查 `dialogue_tree_config.lua.txt` 中的 `DialogueTreeConfig.Dialogues` 是否配置了该NPC的对话
+- 检查 `OptionsContainer` 是否正确创建
+- 检查 `OptionButton` 模板是否存在
+
+**问题：选项点击无响应**
+- 查看Console是否有错误信息
+- 检查选项回调函数是否正确配置
+- 检查 `UIHelper.BindButtonWithSound` 是否正常工作
+
 ## 🚀 下一步
 
 完成对话UI和选项系统后，你可以：
 
 1. ✅ **对话选项系统** - 已完成！现在可以显示选项了
-2. **集成任务系统** - 让NPC可以通过对话选项给玩家任务
-3. **添加商店系统** - NPC可以打开商店界面
-4. **对话分支系统** - 实现多段对话，根据选项跳转到不同对话
+2. ✅ **多段对话系统** - 已完成！支持NPC与玩家的多轮交互
+3. **集成任务系统** - 让NPC可以通过对话选项给玩家任务
+4. **添加商店系统** - NPC可以打开商店界面
 5. **美化UI** - 添加动画、特效等
+
+---
+
+## 🌳 多段对话系统（对话树）
+
+### 概述
+
+多段对话系统支持NPC与玩家进行多轮交互，就像游戏中的剧情对话一样。NPC说一句，玩家选择回应，然后NPC再回应，形成对话链。
+
+### 配置对话树
+
+在 `Resources/lua/rpg/table/dialogue_tree_config.lua.txt` 中配置对话树：
+
+```lua
+DialogueTreeConfig.Trees = {
+    [NPC_ID] = {
+        startNodeId = 1,  -- 起始对话节点ID
+        nodes = {
+            [1] = {  -- 第一段对话
+                id = 1,
+                npcText = "NPC说的话",
+                options = {
+                    {text = "玩家选项1", nextNodeId = 2},  -- 跳转到节点2
+                    {text = "玩家选项2", nextNodeId = 3},  -- 跳转到节点3
+                    {text = "再见", nextNodeId = 0}        -- 0表示结束对话
+                }
+            },
+            [2] = {  -- 第二段对话（玩家选择选项1后）
+                id = 2,
+                npcText = "NPC的回应",
+                options = {
+                    {text = "继续", nextNodeId = 4},
+                    {text = "结束", nextNodeId = 0}
+                }
+            }
+        }
+    }
+}
+```
+
+### 对话节点格式
+
+```lua
+{
+    id = 1,                    -- 对话节点ID（必填，必须唯一）
+    npcText = "NPC说的话",     -- NPC的对话文本（必填）
+    options = {                -- 玩家选项列表（可选）
+        {
+            text = "选项文本",      -- 选项显示的文本（必填）
+            nextNodeId = 2,         -- 选择此选项后跳转到的对话节点ID（必填，0表示结束对话）
+            action = "custom_action"  -- 可选：自定义动作
+        }
+    }
+}
+```
+
+**注意：**
+- 如果 `options` 为空或不存在，则显示普通对话（无选项）
+- `nextNodeId = 0` 表示结束对话
+- 每个对话节点必须有一个唯一的 `id`
+
+### 示例：完整的对话树
+
+已在 `dialogue_tree_config.lua.txt` 中为NPC ID=1配置了示例对话树：
+
+1. **第一段**：NPC打招呼
+   - 选项1："你好，很高兴见到你" → 跳转到节点2
+   - 选项2："这里是什么地方？" → 跳转到节点3
+   - 选项3："再见" → 结束对话
+
+2. **第二段**（选择"你好"后）：
+   - NPC回应："我也很高兴见到你！如果你需要帮助，随时可以找我。"
+   - 选项1："谢谢" → 结束对话
+   - 选项2："我需要什么帮助？" → 跳转到节点4
+
+3. **第二段**（选择"这里是什么地方"后）：
+   - NPC回应："这里是新手村，是冒险者们开始旅程的地方。"
+   - 选项1："明白了，谢谢" → 结束对话
+   - 选项2："有什么需要注意的吗？" → 跳转到节点5
+
+### 工作原理
+
+1. **优先级检查**：系统会优先检查NPC是否有对话树配置
+   - 如果有对话树配置，使用多段对话系统
+   - 如果没有，使用旧的单段对话系统
+
+2. **对话流程**：
+   - 显示起始节点（`startNodeId`）
+   - 玩家选择选项
+   - 根据选项的 `nextNodeId` 跳转到下一个节点
+   - 重复直到 `nextNodeId = 0` 或没有选项
+
+3. **自动切换**：系统会自动在对话节点之间切换，无需手动管理
+
+### 测试多段对话
+
+1. **配置对话树**：已在 `dialogue_tree_config.lua.txt` 中为NPC ID=1配置了示例对话树
+
+2. **运行游戏**：
+   - 与NPC（ID=1）交互
+   - 应该看到第一段对话和选项
+   - 选择不同选项，会看到不同的后续对话
+
+3. **验证流程**：
+   - 选择"你好" → 看到节点2的对话
+   - 选择"这里是什么地方？" → 看到节点3的对话
+   - 选择"再见" → 对话结束
+
+### 与单段对话的兼容性
+
+- 如果NPC有对话树配置，优先使用对话树
+- 如果NPC没有对话配置，使用NPCConfig表格中的默认对话文本
+- 两个系统可以共存，互不干扰
+
+### 高级功能
+
+#### 自定义动作
+
+在选项中可以添加 `action` 字段，用于执行自定义逻辑：
+
+```lua
+{
+    text = "打开商店",
+    nextNodeId = 2,
+    action = "open_shop"  -- 可以在回调中处理
+}
+```
 
 ---
 

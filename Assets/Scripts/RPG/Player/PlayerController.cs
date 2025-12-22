@@ -35,6 +35,11 @@ public class PlayerController : MonoBehaviour
     
     // 平滑后的输入值
     private Vector2 smoothedInputDir = Vector2.zero;
+    
+    /// <summary>
+    /// 对话是否激活（对话激活时禁用玩家操作）
+    /// </summary>
+    private bool isDialogueActive = false;
 
     [Header("生命值设置")]
     public int MaxHealth = 100;
@@ -108,10 +113,25 @@ public class PlayerController : MonoBehaviour
             CurrentHealth = CharacterData.HP;
             MaxHealth = CharacterData.MaxHP;
         }
+        
+        // 监听对话事件
+        if (EventManager.Instance != null)
+        {
+            EventManager.Instance.RegisterEvent("DIALOGUE_START", OnDialogueStart);
+            EventManager.Instance.RegisterEvent("DIALOGUE_END", OnDialogueEnd);
+        }
     }
 
     private void Update()
     {
+        // 如果对话激活，禁用所有玩家操作
+        if (isDialogueActive)
+        {
+            InputDir = Vector2.zero;
+            smoothedInputDir = Vector2.zero;
+            return; // 直接返回，不处理任何输入
+        }
+        
         // 更新输入
         UpdateInput();
         
@@ -246,6 +266,34 @@ public class PlayerController : MonoBehaviour
     private void OnGetHit()
     {
         SkillSystem?.InterruptSkill();
+    }
+    
+    /// <summary>
+    /// 对话开始事件处理（禁用玩家操作）
+    /// </summary>
+    private void OnDialogueStart()
+    {
+        isDialogueActive = true;
+        Debug.Log("[PlayerController] 对话开始，禁用玩家操作");
+    }
+    
+    /// <summary>
+    /// 对话结束事件处理（恢复玩家操作）
+    /// </summary>
+    private void OnDialogueEnd()
+    {
+        isDialogueActive = false;
+        Debug.Log("[PlayerController] 对话结束，恢复玩家操作");
+    }
+    
+    private void OnDestroy()
+    {
+        // 注销对话事件
+        if (EventManager.Instance != null)
+        {
+            EventManager.Instance.UnregisterEvent("DIALOGUE_START", OnDialogueStart);
+            EventManager.Instance.UnregisterEvent("DIALOGUE_END", OnDialogueEnd);
+        }
     }
 }
 

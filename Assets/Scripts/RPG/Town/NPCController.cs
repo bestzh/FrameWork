@@ -264,44 +264,48 @@ public class NPCController : MonoBehaviour
     /// </summary>
     void ShowDialogue()
     {
-        // 直接调用Lua的对话管理器
+        // 调用Lua的NPCController.ShowDialogue，它会自动加载选项配置
         try
         {
             var luaManager = LuaManager.Instance;
             if (luaManager != null && luaManager.LuaEnv != null)
             {
-                // 加载Lua模块
-                var dialogueManager = luaManager.Require("rpg.dialogue_manager");
-                if (dialogueManager != null)
+                // 加载Lua的NPCController模块
+                var npcControllerModule = luaManager.Require("rpg.npc_controller");
+                if (npcControllerModule != null)
                 {
-                    var showDialogueFunc = dialogueManager.Get<XLua.LuaFunction>("ShowDialogue");
+                    var showDialogueFunc = npcControllerModule.Get<XLua.LuaFunction>("ShowDialogue");
                     if (showDialogueFunc != null)
                     {
-                        // 调用Lua函数
-                        showDialogueFunc.Call(
-                            npcName,
-                            dialogueText,
-                            null, // 头像路径（可选）
-                            (System.Action)(() =>
-                            {
-                                // 对话关闭后的回调
-                                ResetInteraction();
-                            })
-                        );
+                        // 创建NPC数据表传递给Lua
+                        var npcData = luaManager.LuaEnv.NewTable();
+                        npcData.Set("configID", configID);
+                        npcData.Set("npcName", npcName);
+                        npcData.Set("dialogueText", dialogueText);
+                        npcData.Set("interactionDistance", interactionDistance);
+                        npcData.Set("interactionKey", interactionKey.ToString());
+                        
+                        // 创建对话关闭回调，用于重置交互状态
+                        System.Action onDialogueClosed = ResetInteraction;
+                        npcData.Set("onDialogueClosed", onDialogueClosed);
+                        
+                        // 调用Lua函数，传递npc数据表
+                        showDialogueFunc.Call(npcData);
                         showDialogueFunc.Dispose();
+                        npcData.Dispose();
                         return;
                     }
-                    dialogueManager.Dispose();
+                    npcControllerModule.Dispose();
                 }
             }
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"[NPCController] 调用Lua对话管理器失败: {e.Message}");
+            Debug.LogError($"[NPCController] 调用Lua NPCController失败: {e.Message}\n{e.StackTrace}");
         }
         
         // 后备方案：使用Debug输出
-        Debug.LogWarning($"[NPCController] 无法调用Lua对话管理器，使用Debug输出");
+        Debug.LogWarning($"[NPCController] 无法调用Lua NPCController，使用Debug输出");
         Debug.Log($"=== {npcName} ===");
         Debug.Log(dialogueText);
         // 延迟重置交互状态

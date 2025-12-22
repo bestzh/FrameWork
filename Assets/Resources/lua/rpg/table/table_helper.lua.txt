@@ -1,0 +1,102 @@
+---@diagnostic disable: undefined-global
+---@diagnostic disable: unused-local
+-- Table工具类
+-- 提供table相关的辅助函数，特别是处理C#数组/List与Lua table之间的转换
+
+local TableHelper = {}
+
+-- 将C#数组/List转换为Lua table
+-- @param value 要转换的值（可以是Lua table、C#数组、C# List或nil）
+-- @return Lua table，如果无法转换则返回空table
+function TableHelper.ConvertToLuaTable(value)
+    if value == nil then
+        return {}
+    end
+    
+    -- 如果已经是Lua table，直接返回
+    if type(value) == "table" then
+        return value
+    end
+    
+    -- 如果是userdata（C#数组或List），尝试转换
+    if type(value) == "userdata" then
+        local result = {}
+        -- 尝试使用Length属性（数组）
+        local success1, length = pcall(function() return value.Length end)
+        if success1 and length and length > 0 then
+            for i = 0, length - 1 do
+                table.insert(result, value[i])
+            end
+            return result
+        end
+        
+        -- 尝试使用Count属性（List）
+        local success2, count = pcall(function() return value.Count end)
+        if success2 and count and count > 0 then
+            for i = 0, count - 1 do
+                table.insert(result, value[i])
+            end
+            return result
+        end
+        
+        -- 如果无法转换，可能是空数组/List或无法识别的类型，静默返回空table
+        -- （不输出警告，因为nil或空数组是正常情况）
+        return {}
+    end
+    
+    -- 其他类型，返回空table
+    return {}
+end
+
+-- 安全获取数组/List的长度
+-- @param value 要获取长度的值（可以是Lua table、C#数组、C# List或nil）
+-- @return 长度，如果无法获取则返回0
+function TableHelper.GetCount(value)
+    if value == nil then
+        return 0
+    end
+    
+    if type(value) == "table" then
+        return #value
+    end
+    
+    if type(value) == "userdata" then
+        -- 尝试获取C#数组/List的长度
+        local success1, length = pcall(function() return value.Length end)
+        if success1 and length then
+            return length
+        end
+        
+        local success2, count = pcall(function() return value.Count end)
+        if success2 and count then
+            return count
+        end
+        
+        return 0
+    end
+    
+    return 0
+end
+
+-- 检查值是否为空（nil、空table或长度为0的数组）
+-- @param value 要检查的值
+-- @return 如果为空则返回true，否则返回false
+function TableHelper.IsEmpty(value)
+    if value == nil then
+        return true
+    end
+    
+    if type(value) == "table" then
+        return #value == 0
+    end
+    
+    if type(value) == "userdata" then
+        local count = TableHelper.GetCount(value)
+        return count == 0
+    end
+    
+    return false
+end
+
+return TableHelper
+
